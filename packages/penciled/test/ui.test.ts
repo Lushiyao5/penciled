@@ -70,13 +70,15 @@ describe('toolbar', () => {
       {},
       `<div style="height: 200px"></div>${TEXT}<div style="height: 3000px"></div>`,
     );
+    // The placed position, not the rect: the rect includes the enter transition's transform, which
+    // can still be running on slow CI machines.
+    const top = () => Number.parseFloat(popover()?.style.top ?? '');
     await selectText(find(root, 'brown fox'));
-    await wait(50);
-    const before = popover()!.getBoundingClientRect().top;
+    await expect.poll(top).toBeGreaterThan(0);
+    const before = top();
     window.scrollBy(0, 100);
-    // Polled: the scroll event and the repositioning both land a frame or more later, which can
-    // outlast a fixed wait on slow CI machines.
-    await expect.poll(() => popover()!.getBoundingClientRect().top).toBeCloseTo(before - 100, 0);
+    // Polled: the scroll event and the repositioning both land a frame or more later.
+    await expect.poll(top).toBeCloseTo(before - 100, 0);
     window.scrollTo(0, 0);
   });
 
