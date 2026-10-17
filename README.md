@@ -4,6 +4,8 @@ Beautiful, persistent text highlights and notes for any webpage. Think **Sonner,
 
 [Documentation](https://penciled-nu.vercel.app) · [Playground](https://penciled-nu.vercel.app/playground/) · [npm](https://www.npmjs.com/package/penciled)
 
+![Selecting a sentence, highlighting it in yellow and adding a note. After a reload the highlight comes back, and hovering it shows the note.](./.github/assets/demo.gif)
+
 ```sh
 npm install penciled
 ```
