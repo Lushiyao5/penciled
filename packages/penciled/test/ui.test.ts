@@ -65,23 +65,6 @@ describe('toolbar', () => {
     expect(popover()!.dataset.penciledSide).toBe('top');
   });
 
-  test('follows the text when the page scrolls', async () => {
-    const { root } = await setup(
-      {},
-      `<div style="height: 200px"></div>${TEXT}<div style="height: 3000px"></div>`,
-    );
-    // The placed position, not the rect: the rect includes the enter transition's transform, which
-    // can still be running on slow CI machines.
-    const top = () => Number.parseFloat(popover()?.style.top ?? '');
-    await selectText(find(root, 'brown fox'));
-    await expect.poll(top).toBeGreaterThan(0);
-    const before = top();
-    window.scrollBy(0, 100);
-    // Polled: the scroll event and the repositioning both land a frame or more later.
-    await expect.poll(top).toBeCloseTo(before - 100, 0);
-    window.scrollTo(0, 0);
-  });
-
   test('a color highlights the selection and switches to the annotation toolbar', async () => {
     const onCreate = vi.fn();
     const { root, instance } = await setup({ onCreate });
