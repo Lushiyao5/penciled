@@ -1,0 +1,90 @@
+---
+title: Read-only publisher annotations
+description: Ship annotations with your content that readers can open but not change.
+---
+
+Sometimes the annotations come from you, not the reader: an editor's notes on a classic text, a glossary, corrections, or a teacher's comments. penciled can show them with the same UI, without letting readers change them.
+
+## Everything read-only
+
+With `readOnly: true`, readers can click highlights and read their notes, but can't create, change or remove anything. Load the annotations from your own data with a storage adapter whose `save` does nothing:
+
+```ts
+import { annotate } from 'penciled';
+import annotations from './chapter-1.annotations.json';
+
+annotate('#chapter', {
+  documentId: 'chapter-1',
+  readOnly: true,
+  storage: {
+    load: async () => annotations,
+    save: async () => {},
+  },
+  noteIndicator: 'underline', // show which highlights have a note
+});
+```
+
+`copy` and [custom actions](/recipes/ask-ai/) still appear in read-only mode, so you can offer, say, a “Share quote” button.
+
+## Creating the annotations
+
+Annotations store a quote with its surrounding text and position, so the easiest way to produce them is to annotate the page yourself. Open your page in development without `readOnly`, highlight and write notes, then copy the result from the console:
+
+```ts
+const penciled = annotate('#chapter', { documentId: 'chapter-1', storage: 'memory' });
+
+// later, in the console:
+copy(JSON.stringify(penciled.getAll(), null, 2));
+```
+
+The [playground](/playground/) works the same way. Because annotations are re-anchored on every load, small later edits to your text don't break them. If you rewrite a passage, its annotation is [orphaned](/guides/anchoring/#orphans) rather than attached to the wrong text, and you can find it through the `orphan` event:
+
+```ts
+annotate('#chapter', {
+  readOnly: true,
+  storage,
+  onOrphan: (a) => console.warn(`Annotation ${a.id} no longer matches: “${a.quote}”`),
+});
+```
+
+## Publisher annotations alongside the reader's
+
+To let readers highlight as usual while your annotations stay locked, mark yours `editable: false` instead of using `readOnly`. Readers can open them but not recolor, edit or remove them. A storage adapter combines both sources and saves only the reader's:
+
+```ts
+import { annotate, type AnnotationStorage } from 'penciled';
+import published from './chapter-1.annotations.json';
+
+const key = (id: string) => `my-site:${id}`;
+
+const storage: AnnotationStorage = {
+  async load(documentId) {
+    const own = JSON.parse(localStorage.getItem(key(documentId)) ?? '[]');
+    return [...published.map((a) => ({ ...a, editable: false })), ...own];
+  },
+  async save(documentId, annotations) {
+    const own = annotations.filter((a) => a.editable !== false);
+    localStorage.setItem(key(documentId), JSON.stringify(own));
+  },
+};
+
+annotate('#chapter', { documentId: 'chapter-1', storage });
+```
+
+To make your annotations stand out from the reader's, give them a color of their own and set it on the published annotations (`color: 'editor'`):
+
+```ts
+annotate('#chapter', {
+  documentId: 'chapter-1',
+  storage,
+  colors: [
+    'yellow',
+    'green',
+    'blue',
+    'pink',
+    { name: 'editor', light: '#fdba7466', dark: '#fb923c40', label: 'Editor' },
+  ],
+});
+```
+
+An annotation is only painted in its own color while that color is listed in `colors` (otherwise it falls back to `defaultColor`), so the `editor` color also appears in the reader's toolbar.

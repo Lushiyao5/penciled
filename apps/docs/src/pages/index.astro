@@ -1,0 +1,283 @@
+---
+// The landing page: one narrow column, the library running live, and the code to get it.
+import '@fontsource-variable/source-serif-4/opsz.css';
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
+import 'penciled/styles.css';
+import '../styles/tokens.css';
+import '../styles/custom.css';
+import '../styles/landing.css';
+import { Code } from '@astrojs/starlight/components';
+
+const github = 'https://github.com/marcellosso/penciled';
+const npm = 'https://www.npmjs.com/package/penciled';
+
+const title = 'penciled: text highlights and notes for any webpage';
+const description =
+  'A tiny, framework-agnostic JavaScript library that adds beautiful, persistent text highlights and notes to any webpage. 15 kB, no backend, never touches your DOM.';
+const canonical = Astro.site && new URL('/', Astro.site).href;
+const ogImage = Astro.site ? new URL('/og.png', Astro.site).href : '/og.png';
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareSourceCode',
+  name: 'penciled',
+  description,
+  ...(canonical && { url: canonical }),
+  codeRepository: github,
+  programmingLanguage: ['TypeScript', 'JavaScript'],
+  runtimePlatform: 'Web browser',
+  license: 'https://opensource.org/licenses/MIT',
+  keywords:
+    'text highlight, annotation, notes, CSS Custom Highlight API, JavaScript library, React',
+};
+
+const setup = `import { annotate } from 'penciled';
+import 'penciled/styles.css';
+
+annotate('#article');`;
+
+const colors = `annotate('#article', {
+  colors: [
+    'yellow', 'green', 'blue', 'pink', 'purple',
+    { name: 'mint', light: '#5eead480', dark: '#2dd4bf47' },
+  ],
+});`;
+
+const action = `const askAI = {
+  id: 'ask-ai',
+  label: 'Ask AI',
+  icon: sparkles,
+  onSelect: async ({ range, annotation }) => {
+    const a = annotation ?? penciled.create(range, { color: 'purple' });
+    const answer = await explain(a.quote); // your endpoint
+    penciled.update(a.id, { note: answer });
+  },
+};
+
+const penciled = annotate('#article', {
+  actions: ['highlight', 'note', askAI, 'remove'],
+});`;
+
+const storage = `const url = (id) => \`/api/notes/\${id}\`;
+
+annotate('#article', {
+  documentId: 'post-42',
+  storage: {
+    load: (id) => fetch(url(id)).then((r) => r.json()),
+    save: (id, annotations) =>
+      fetch(url(id), { method: 'PUT', body: JSON.stringify(annotations) }),
+  },
+});`;
+
+const react = `import { Annotatable } from 'penciled/react';
+import 'penciled/styles.css';
+
+export function Post({ post }) {
+  return (
+    <Annotatable as="article" options={{ documentId: post.id }}>
+      <h1>{post.title}</h1>
+      <Markdown>{post.body}</Markdown>
+    </Annotatable>
+  );
+}`;
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="penciled" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="penciled: Read with a pencil in hand." />
+    <meta property="og:locale" content="en" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+    <script is:inline>
+      // Same storage key as the docs (Starlight), so the theme carries across.
+      (() => {
+        const stored = localStorage.getItem('starlight-theme');
+        const theme =
+          stored === 'light' || stored === 'dark'
+            ? stored
+            : matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="top">
+      <a href="/" class="wordmark" aria-label="penciled home">
+        penciled
+        <svg class="stroke" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M2 8.5c14-3.2 30-4.6 47-4.2 17 .4 30 2.3 44 2.6 9 .2 17-.5 25-2.1" pathLength="1"></path>
+        </svg>
+      </a>
+      <nav aria-label="Main">
+        <a href="/getting-started/">Docs</a>
+        <a href="/playground/">Playground</a>
+        <a href={github}>GitHub</a>
+        <button type="button" class="theme" id="theme" aria-label="Toggle dark mode">
+          <svg viewBox="0 0 24 24" aria-hidden="true"
+            ><circle cx="12" cy="12" r="4.5"></circle><path d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"
+            ></path></svg
+          >
+        </button>
+      </nav>
+    </header>
+
+    <main class="column">
+      <section class="intro">
+        <h1>Read with a pencil in hand.</h1>
+        <p class="facts">
+          Highlights and notes for any webpage. 15&nbsp;kB, no backend, never touches your DOM.
+        </p>
+        <div class="actions">
+          <div class="install">
+            <code><span aria-hidden="true">$</span> npm install penciled</code>
+            <button type="button" id="copy-install" aria-label="Copy install command">
+              <svg viewBox="0 0 24 24" aria-hidden="true"
+                ><rect x="8" y="8" width="13" height="13" rx="2.5"></rect><path
+                  d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-8A2.5 2.5 0 0 0 3 5.5v8A2.5 2.5 0 0 0 5.5 16H8"
+                ></path></svg
+              >
+            </button>
+          </div>
+          <a class="primary" href="/getting-started/">Read the docs <span aria-hidden="true">→</span></a>
+        </div>
+        <p class="links">
+          <a href={npm}>npm</a>
+          <a href={github}>GitHub</a>
+          <a href="/playground/">Playground</a>
+        </p>
+      </section>
+
+      <article id="demo" class="demo">
+        <p>
+          penciled adds highlights and notes to any page. Select a few words in this paragraph and a
+          small toolbar appears: pick a color, or write a note. Nothing else about the page changes.
+        </p>
+        <p>
+          Your annotations are saved in this browser as you make them. Reload the page and they come
+          back exactly where you left them, even if the text around them has moved a little. If a
+          passage changes so much that penciled can't be sure where it went, the annotation is set
+          aside rather than attached to the wrong words.
+        </p>
+        <p>
+          The highlights you see are painted by the browser itself, with the CSS Custom Highlight API.
+          Your markup is never wrapped or rewritten, so frameworks can re-render the page as often as
+          they like.
+        </p>
+      </article>
+      <p class="hint">
+        Select any text. Hover or click a highlight. Reload, and it's all still here.
+        <button type="button" class="link" id="demo-reset">Reset</button>
+      </p>
+
+      <section class="block" aria-labelledby="b-setup">
+        <h2 id="b-setup">Setup</h2>
+        <p>Three lines. Highlights, notes and saving work immediately.</p>
+        <Code code={setup} lang="ts" />
+      </section>
+
+      <section class="block" aria-labelledby="b-colors">
+        <h2 id="b-colors">Colors</h2>
+        <p>Five presets that work in light and dark mode, plus any of your own.</p>
+        <div class="specimen" id="ex-colors">
+          Yellow, green, blue, pink and purple come built in, and mint is one of your own.
+        </div>
+        <Code code={colors} lang="ts" />
+      </section>
+
+      <section class="block" aria-labelledby="b-notes">
+        <h2 id="b-notes">Notes</h2>
+        <p>Plain-text notes on any highlight. Choose how readers discover them.</p>
+        <div class="notes">
+          <figure>
+            <div class="specimen" id="ex-click">A note opens when you click its highlight.</div>
+            <figcaption>Default</figcaption>
+          </figure>
+          <figure>
+            <div class="specimen" id="ex-underline">
+              An underline shows which highlights have a note.
+            </div>
+            <figcaption><code>noteIndicator: 'underline'</code></figcaption>
+          </figure>
+          <figure>
+            <div class="specimen" id="ex-hover">Rest the mouse on this highlight to read it.</div>
+            <figcaption><code>notePreview: 'hover'</code></figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="b-actions">
+        <h2 id="b-actions">Custom actions</h2>
+        <p>Add your own buttons to the toolbar. Select a few words below and press the sparkle.</p>
+        <div class="specimen" id="ex-actions">
+          A custom action receives the selected text and can create a highlight, write a note or do
+          anything else your app needs.
+        </div>
+        <Code code={action} lang="ts" />
+      </section>
+
+      <section class="block" aria-labelledby="b-storage">
+        <h2 id="b-storage">Storage</h2>
+        <p>
+          <code>localStorage</code> by default: <span id="saved">the demo above is saved under
+          <code>penciled:site-demo</code></span>. Two async methods save to your own API instead.
+        </p>
+        <Code code={storage} lang="ts" />
+      </section>
+
+      <section class="block" aria-labelledby="b-react">
+        <h2 id="b-react">React</h2>
+        <p>A hook and a component. Re-render as often as you like.</p>
+        <Code code={react} lang="tsx" />
+      </section>
+
+      <section class="block" aria-labelledby="b-dom">
+        <h2 id="b-dom">Never touches your DOM</h2>
+        <p>Highlight anything in this sentence and watch its markup below. It doesn't change.</p>
+        <div class="specimen" id="ex-dom">Your markup stays exactly as you wrote it.</div>
+        <div class="dom">
+          <pre id="dom-html"></pre>
+          <p class="dom-status" id="dom-status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <nav class="next" aria-label="Next steps">
+        <a href="/getting-started/">Get started <span aria-hidden="true">→</span></a>
+        <a href="/playground/">Playground</a>
+        <a href="/reference/options/">API reference</a>
+      </nav>
+    </main>
+
+    <footer class="column foot">
+      <span>MIT licensed</span>
+      <a href={github}>GitHub</a>
+    </footer>
+
+    <script>
+      import '../scripts/landing.ts';
+    </script>
+  </body>
+</html>

@@ -1,0 +1,231 @@
+---
+title: Theming and customization
+description: Customize colors, themes and the toolbar with CSS custom properties and options.
+---
+
+penciled's defaults are meant to look right on most pages without changes. When they don't, everything can be adjusted with CSS custom properties, and every selector in `penciled/styles.css` is wrapped in `:where()`. That gives it zero specificity, so any rule you write wins without `!important`.
+
+## Light, dark and auto
+
+The `theme` option sets the color scheme of the toolbar, note editor and note preview:
+
+```ts
+const penciled = annotate('#article', { theme: 'auto' }); // 'light' | 'dark' | 'auto'
+
+penciled.setTheme('dark'); // switch later without recreating the instance
+```
+
+`auto`, the default, follows the reader's `prefers-color-scheme`.
+
+**Highlights follow your page, not this option.** Highlight colors use CSS `light-dark()`, which resolves against the page's own `color-scheme`. A highlight sits on your page's background, so it should match your page, even when the toolbar floating above it doesn't. If your dark mode doesn't set `color-scheme`, add it:
+
+```css
+:root {
+  color-scheme: light;
+}
+:root.dark {
+  color-scheme: dark;
+}
+```
+
+## Following a `.dark` class
+
+Many sites switch themes with a class or attribute on `<html>` instead of following the operating system. To make penciled's UI follow it, keep `theme: 'auto'` and add two rules. The UI elements carry `data-penciled-theme`, so explicit `'light'` and `'dark'` themes still win:
+
+```css
+[data-penciled-popover][data-penciled-theme='auto'] {
+  color-scheme: light;
+}
+.dark [data-penciled-popover][data-penciled-theme='auto'] {
+  color-scheme: dark;
+}
+```
+
+This works because penciled's UI is appended to `<body>` in the light DOM, so it inherits from your page like any other element. With the highlight rule from the previous section, this site uses exactly that to follow its theme toggle (with `[data-theme='dark']` instead of `.dark`).
+
+Alternatively, call `setTheme()` whenever your theme changes:
+
+```ts
+const penciled = annotate('#article');
+const root = document.documentElement;
+const sync = () => penciled.setTheme(root.classList.contains('dark') ? 'dark' : 'light');
+new MutationObserver(sync).observe(root, { attributeFilter: ['class'] });
+sync();
+```
+
+## Highlight colors
+
+There are five presets: `yellow`, `green`, `blue`, `pink` and `purple`. The `colors` option picks which ones appear in the toolbar, and in which order. The first one is the default for new highlights unless you set `defaultColor`.
+
+```ts
+annotate('#article', {
+  colors: ['yellow', 'blue', 'pink'],
+  defaultColor: 'blue',
+});
+```
+
+Add your own colors with `{ name, light, dark? }`. They are exposed as `--penciled-<name>`:
+
+```ts
+annotate('#article', {
+  colors: [
+    'yellow',
+    'green',
+    { name: 'mint', light: '#5eead480', dark: '#2dd4bf47', label: 'Mint' },
+    { name: 'brand' }, // value comes from your CSS
+  ],
+});
+```
+
+```css
+:root {
+  --penciled-brand: light-dark(#ffb4a280, #ff8a6b47);
+}
+```
+
+`label` is the color's accessible name in the toolbar. It defaults to `name`.
+
+Highlights are painted under the text, so translucent colors work best: they stay readable on any background and over other highlights. The presets use 50% opacity in light mode and 25–30% in dark mode.
+
+An annotation keeps its color's _name_. If you later remove a color from `colors`, annotations that used it are painted with `defaultColor` instead, and get their color back if you add it again.
+
+### Overriding the presets
+
+Each preset is a custom property you can override:
+
+```css
+:root {
+  --penciled-yellow: light-dark(#fef08a, #854d0e80);
+}
+```
+
+### Styling highlights further
+
+Highlights are drawn with the [CSS Custom Highlight API](/guides/anchoring/#how-highlights-are-drawn), and each color is a named highlight: `penciled-<name>` and, with `noteIndicator: 'underline'`, `penciled-<name>-noted` for annotations that have a note. The open or focused annotation is also painted with `penciled-active`. You can style them with `::highlight()`:
+
+```css
+::highlight(penciled-pink) {
+  color: #831843;
+}
+```
+
+Only a few properties apply to `::highlight()`: `color`, `background-color`, `text-decoration`, `text-shadow` and a few others. Padding, borders and border radius are not supported.
+
+## Note indicator
+
+With `noteIndicator: 'underline'`, highlights that have a note get a dotted underline, so readers can tell which ones have something to show. Change its look with `--penciled-noted`, which is a `text-decoration` value:
+
+```css
+:root {
+  --penciled-noted: underline wavy 1px;
+}
+```
+
+## Custom properties
+
+| Property | Used for |
+|---|---|
+| `--penciled-yellow`, `-green`, `-blue`, `-pink`, `-purple` | Highlight colors |
+| `--penciled-active` | Overlay on the open or focused annotation |
+| `--penciled-noted` | Text decoration of annotations with a note |
+| `--penciled-bg` | Toolbar and editor background |
+| `--penciled-fg` | Toolbar and editor text |
+| `--penciled-muted` | Placeholder text |
+| `--penciled-border` | Borders and dividers |
+| `--penciled-hover` | Button hover background |
+| `--penciled-accent` | Primary button background |
+| `--penciled-accent-fg` | Primary button text |
+| `--penciled-ring` | Focus outline |
+| `--penciled-radius` | Corner radius |
+| `--penciled-shadow` | Toolbar and editor shadow |
+| `--penciled-font` | Font family |
+| `--penciled-z` | `z-index` of the floating UI |
+
+The UI properties use `light-dark()` too, so set both values to support both themes:
+
+```css
+:root {
+  --penciled-radius: 6px;
+  --penciled-accent: light-dark(#4f46e5, #a5b4fc);
+  --penciled-accent-fg: light-dark(#fff, #1e1b4b);
+  --penciled-font: 'Inter', sans-serif;
+}
+```
+
+## Targeting the UI
+
+Every element penciled adds carries a `data-penciled` attribute, and the floating cards carry `data-penciled-popover`. The card's `data-penciled-side` attribute says where it ended up (`top`, `bottom`, …). Useful hooks:
+
+| Selector | Element |
+|---|---|
+| `[data-penciled-popover]` | The toolbar card, and the note preview |
+| `[data-penciled-popover] [role='toolbar']` | The row of actions |
+| `[data-penciled-swatch]` | A color button |
+| `[data-penciled-action='note']` | An action button, by id (`copy`, `remove`, `color-yellow`, your custom ids) |
+| `[data-penciled-note]` | A note shown in the toolbar or the preview |
+| `[data-penciled-editor]` | The note editor |
+
+```css
+[data-penciled-popover] {
+  border-radius: 999px;
+}
+```
+
+These are styling hooks, not a stable API. The markup inside the cards may change between minor versions until `1.0.0`.
+
+## Toolbar actions
+
+The `actions` option sets which buttons appear and in which order:
+
+```ts
+annotate('#article', {
+  actions: ['highlight', 'note', 'copy', 'remove'],
+});
+```
+
+- `highlight` adds one button per color.
+- `note` opens the note editor.
+- `copy` copies the selected or highlighted text. It is off by default.
+- `remove` deletes an existing annotation. It only appears on annotations.
+
+You can add your own actions too: see the [“Ask AI” recipe](/recipes/ask-ai/).
+
+## Placement
+
+By default the toolbar appears above the selection on desktop, and below it on touch devices, where the operating system shows its own menu above the selection. The note editor opens below the text so it doesn't cover what you're annotating. Every card flips and shifts to stay on screen.
+
+```ts
+annotate('#article', {
+  placement: { toolbar: 'bottom-start', editor: 'bottom', preview: 'top' },
+});
+```
+
+## Labels
+
+Every string in the UI, including accessible names, can be replaced with the `labels` option, for translation or tone. See [`Labels`](/reference/types/#labels) for the full list.
+
+```ts
+annotate('#article', {
+  labels: {
+    toolbar: 'Anotação',
+    highlight: 'Destacar em {color}',
+    note: 'Adicionar nota',
+    editNote: 'Editar nota',
+    remove: 'Remover',
+    notePlaceholder: 'Escreva uma nota…',
+    save: 'Salvar',
+    cancel: 'Cancelar',
+  },
+});
+```
+
+## Motion
+
+The cards fade and scale in over 150 ms. When the reader prefers reduced motion, only the fade remains. To remove the transitions entirely:
+
+```css
+[data-penciled-popover],
+[data-penciled-popover] * {
+  transition: none;
+}
+```

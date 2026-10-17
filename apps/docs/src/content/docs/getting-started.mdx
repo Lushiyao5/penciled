@@ -1,0 +1,99 @@
+---
+title: Getting started
+description: Install penciled and enable annotations in three lines.
+---
+
+import { Steps, Tabs, TabItem, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+:::caution[Pre-1.0]
+penciled is below `1.0.0`, so the API may still change between minor versions. Breaking changes are listed in the changelog.
+:::
+
+<Steps>
+
+1. Install the package.
+
+   <Tabs syncKey="pkg">
+     <TabItem label="npm">
+     ```sh
+     npm install penciled
+     ```
+     </TabItem>
+     <TabItem label="pnpm">
+     ```sh
+     pnpm add penciled
+     ```
+     </TabItem>
+     <TabItem label="yarn">
+     ```sh
+     yarn add penciled
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```sh
+     bun add penciled
+     ```
+     </TabItem>
+   </Tabs>
+
+2. Call `annotate()` on the element that holds your content, and import the default styles.
+
+   ```ts
+   import { annotate } from 'penciled';
+   import 'penciled/styles.css';
+
+   annotate('#article');
+   ```
+
+   `annotate()` accepts a CSS selector or an element. Readers can now select text inside it to highlight it in one of five colors, add a note, or click a highlight to change it.
+
+3. Reload the page. Annotations are saved to `localStorage` as they change and restored when the page loads. No backend is needed.
+
+</Steps>
+
+## The styles
+
+`penciled/styles.css` holds the toolbar, the note editor and the highlight colors. Import it once, from JavaScript as above or from CSS:
+
+```css
+@import 'penciled/styles.css';
+```
+
+Every selector in it has zero specificity, so your own CSS always wins. See [Theming and customization](/guides/theming/).
+
+## Name the document
+
+Annotations are stored under a **document id**. By default it is the page's pathname, plus the container's `id` when it has one. In development penciled warns about this default, because in single-page apps the URL doesn't always identify the content. Pass your own id when the same page can show different content:
+
+```ts
+annotate('#article', { documentId: `post-${post.slug}` });
+```
+
+## Keep the instance
+
+`annotate()` returns an instance for reading and changing annotations, listening to events and cleaning up:
+
+```ts
+const penciled = annotate('#article', {
+  onCreate: (annotation) => console.log('Highlighted', annotation.quote),
+});
+
+penciled.getAll(); // every annotation, in document order
+penciled.export(); // { version, documentId, annotations }
+penciled.destroy(); // removes highlights, UI and listeners
+```
+
+See [Instance](/reference/instance/) for every method.
+
+## Server-side rendering
+
+Importing `penciled` is safe on the server: nothing touches `window` or `document` until `annotate()` runs. Call `annotate()` in the browser only, for example in an effect or a client-side script. In React, use the [React adapter](/recipes/react/).
+
+## Next steps
+
+<CardGrid>
+  <LinkCard title="Playground" description="Try every option and inspect the annotation JSON." href="/playground/" />
+  <LinkCard title="annotate() options" description="Colors, actions, storage, themes and more." href="/reference/options/" />
+  <LinkCard title="Custom storage" description="Save annotations to your own API." href="/recipes/rest-storage/" />
+  <LinkCard title="Anchoring and limitations" description="How annotations find their text again." href="/guides/anchoring/" />
+</CardGrid>

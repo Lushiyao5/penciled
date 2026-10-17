@@ -1,0 +1,189 @@
+---
+title: Types
+description: The Annotation type, AnnotationStorage and the other public types.
+---
+
+All types are exported from `penciled`, and the engine's types from `penciled/headless` too.
+
+```ts
+import type { Annotation, AnnotationStorage, AnnotateOptions, Annotator } from 'penciled';
+```
+
+## Annotation
+
+A single highlight, optionally with a note. This is what `getAll()` returns, what events receive and what storage adapters save.
+
+```ts
+interface Annotation {
+  version: 1;
+  id: string;
+  quote: string;
+  prefix: string;
+  suffix: string;
+  start: number;
+  end: number;
+  color: string;
+  note?: string;
+  editable?: boolean;
+  meta?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+| Field | Description |
+|---|---|
+| `version` | The shape's version. Always `1` for now; older shapes will be migrated when it changes. |
+| `id` | A UUID. |
+| `quote` | The annotated text, with whitespace runs collapsed to one space. |
+| `prefix`, `suffix` | Up to 32 characters of text before and after the quote, used to find it again. |
+| `start`, `end` | The quote's position in the container's whitespace-collapsed text, in UTF-16 code units. |
+| `color` | A color _name_, such as `'yellow'`. Unknown names are painted with `defaultColor`. |
+| `note` | Plain text. Always displayed as text, never as HTML. |
+| `editable` | `false` stops readers from changing or removing it. Defaults to `true`. |
+| `meta` | Your own data, for example a user id. Stored and returned untouched. |
+| `createdAt`, `updatedAt` | ISO 8601 timestamps. |
+
+The shape is flat on purpose, so it's easy to store in a database table or a JSON column. To exchange annotations with other tools, convert them to [W3C Web Annotations](/recipes/export-import/#w3c-web-annotations).
+
+## AnnotationInit
+
+The fields you can set with [`create()`](/reference/instance/#create).
+
+```ts
+interface AnnotationInit {
+  color?: string;
+  note?: string;
+  editable?: boolean;
+  meta?: Record<string, unknown>;
+}
+```
+
+## AnnotationPatch
+
+The fields you can change with [`update()`](/reference/instance/#update). A `note` of `null` or `''` removes the note.
+
+```ts
+interface AnnotationPatch {
+  color?: string;
+  note?: string | null;
+  editable?: boolean;
+  meta?: Record<string, unknown>;
+}
+```
+
+## AnnotationStorage
+
+A persistence adapter. Pass one as the [`storage` option](/reference/options/#storage).
+
+```ts
+interface AnnotationStorage {
+  load(documentId: string): Promise<Annotation[]>;
+  save(documentId: string, annotations: Annotation[]): Promise<void>;
+  // Optional. When present, used instead of `save` for single changes.
+  create?(documentId: string, annotation: Annotation): Promise<void>;
+  update?(documentId: string, annotation: Annotation): Promise<void>;
+  delete?(documentId: string, id: string): Promise<void>;
+}
+```
+
+- `load` is called once, when the instance is created. Return `[]` when there's nothing stored.
+- `save` receives every annotation in the document. It is enough on its own.
+- `create`, `update` and `delete` let you send only what changed, which suits a REST API. Each one you implement replaces `save` for that kind of change. Changes to the same annotation within [`saveDelay`](/reference/options/#savedelay) are combined: creating and then editing one annotation sends a single `create`.
+- Nothing is saved until `load` has finished, so a slow `load` can't be overwritten.
+- A rejected promise goes to [`onError`](/reference/events/#error). penciled doesn't retry.
+
+See [Custom storage](/recipes/rest-storage/) for a complete example.
+
+## ExportData
+
+What [`export()`](/reference/instance/#export) returns and [`import()`](/reference/instance/#import) accepts.
+
+```ts
+interface ExportData {
+  version: 1;
+  documentId: string;
+  annotations: Annotation[];
+}
+```
+
+## SelectContext
+
+What the [`select` event](/reference/events/#select) and custom actions receive.
+
+```ts
+interface SelectContext {
+  text: string;
+  range: Range;
+  annotation?: Annotation;
+  editable: boolean;
+}
+```
+
+## Color
+
+A highlight color for the [`colors` option](/reference/options/#colors).
+
+```ts
+interface Color {
+  name: string;
+  light?: string; // without it, the value comes from your CSS (--penciled-<name>)
+  dark?: string; // defaults to `light`
+  label?: string; // accessible name, defaults to `name`
+}
+```
+
+## Action
+
+A custom toolbar action for the [`actions` option](/reference/options/#actions). The toolbar closes after `onSelect` runs.
+
+```ts
+interface Action {
+  id: string;
+  label: string;
+  icon?: string | Element; // SVG markup or an element; without one, the label is shown
+  onSelect(ctx: SelectContext): void;
+}
+```
+
+`label` is used as the button's accessible name and tooltip. `id` is set as `data-penciled-action` on the button, for styling. Custom actions are shown even in read-only mode, and `ctx.editable` says whether the reader may change the annotation.
+
+## BuiltInAction
+
+```ts
+type BuiltInAction = 'highlight' | 'note' | 'copy' | 'remove';
+```
+
+## Placement
+
+```ts
+type Placement = 'top' | 'bottom' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end';
+```
+
+A side of the text, optionally aligned with the start or end of the nearest line.
+
+## Labels
+
+Every string in the UI, for the [`labels` option](/reference/options/#labels). `{name}` placeholders are filled in.
+
+| Key | Default | Used for |
+|---|---|---|
+| `toolbar` | `Annotation` | The toolbar's accessible name |
+| `highlight` | `Highlight {color}` | Color buttons. `{color}` is the color's label |
+| `note` | `Add note` | Note button |
+| `editNote` | `Edit note` | Note button, when there is a note |
+| `copy` | `Copy` | Copy button |
+| `copied` | `Copied` | Announced after copying |
+| `remove` | `Remove` | Remove button |
+| `noteField` | `Note` | The note field's accessible name |
+| `notePlaceholder` | `Add a note…` | The note field's placeholder |
+| `save` | `Save` | Save button |
+| `cancel` | `Cancel` | Cancel button |
+| `position` | `Annotation {index} of {total}: {text}` | Announced when moving between annotations with the keyboard |
+| `empty` | `No annotations` | Announced when there are none to move to |
+
+## Theme
+
+```ts
+type Theme = 'light' | 'dark' | 'auto';
+```

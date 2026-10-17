@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>penciled engine playground</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font: 16px/1.6 system-ui, sans-serif;
+      }
+      body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 380px;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      article {
+        max-width: 65ch;
+      }
+      aside {
+        position: sticky;
+        top: 1rem;
+        align-self: start;
+        display: grid;
+        gap: 0.75rem;
+        font-size: 14px;
+      }
+      fieldset {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        border: 1px solid #8884;
+        border-radius: 8px;
+      }
+      #list {
+        display: grid;
+        gap: 0.5rem;
+        max-height: 30vh;
+        overflow: auto;
+      }
+      #list > div {
+        border: 1px solid #8884;
+        border-radius: 6px;
+        padding: 0.4rem 0.6rem;
+      }
+      #list .orphan {
+        opacity: 0.6;
+        border-style: dashed;
+      }
+      #log {
+        height: 22vh;
+        overflow: auto;
+        margin: 0;
+        padding: 0.5rem;
+        background: #8881;
+        border-radius: 6px;
+        font: 12px/1.4 ui-monospace, monospace;
+      }
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      /* Headless users bring their own highlight styles; the UI phase ships defaults. */
+      ::highlight(penciled-yellow) { background-color: #fde04780; }
+      ::highlight(penciled-green) { background-color: #86efac80; }
+      ::highlight(penciled-blue) { background-color: #93c5fd80; }
+      ::highlight(penciled-pink) { background-color: #f9a8d480; }
+      ::highlight(penciled-purple) { background-color: #c4b5fd80; }
+      ::highlight(penciled-yellow-noted),
+      ::highlight(penciled-green-noted),
+      ::highlight(penciled-blue-noted),
+      ::highlight(penciled-pink-noted),
+      ::highlight(penciled-purple-noted) {
+        text-decoration: underline dotted 2px;
+      }
+      ::highlight(penciled-yellow-noted) { background-color: #fde04780; }
+      ::highlight(penciled-green-noted) { background-color: #86efac80; }
+      ::highlight(penciled-blue-noted) { background-color: #93c5fd80; }
+      ::highlight(penciled-pink-noted) { background-color: #f9a8d480; }
+      ::highlight(penciled-purple-noted) { background-color: #c4b5fd80; }
+      ::highlight(penciled-active) {
+        text-decoration: underline 2px;
+        text-decoration-color: currentColor;
+      }
+    </style>
+  </head>
+  <body>
+    <article id="article">
+      <h1>The art of the marginal note</h1>
+      <p>
+        Long before software, readers argued with books in their margins. A
+        <em>marginal note</em> is a small act of attention: it marks the exact place where a thought
+        happened, and it only makes sense next to the words that caused it.
+      </p>
+      <p>
+        Pierre de Fermat famously wrote that he had a truly marvelous proof which this margin was
+        too narrow to contain. The note outlived its author by centuries, and the
+        <strong>margin</strong> became part of the story.
+      </p>
+      <p>
+        Digital annotation has to solve a problem paper never had: the text moves. Paragraphs are
+        edited, pages are re-rendered, and the words under a highlight may change. A good engine
+        follows the text when it can, and admits defeat when it cannot.
+      </p>
+      <p>
+        Try highlighting a phrase, then press <em>Mutate content</em>. Then try highlighting a
+        phrase that appears twice, like the margin, and edit around it.
+      </p>
+    </article>
+
+    <aside>
+      <fieldset>
+        <legend>Create from selection</legend>
+        <button type="button" data-color="yellow">Yellow</button>
+        <button type="button" data-color="green">Green</button>
+        <button type="button" data-color="blue">Blue</button>
+        <button type="button" data-color="pink">Pink</button>
+        <button type="button" data-color="purple">Purple</button>
+      </fieldset>
+      <fieldset>
+        <legend>Selected annotation</legend>
+        <textarea id="note" rows="2" placeholder="Select an annotation to edit its note" disabled></textarea>
+        <button type="button" id="save-note" disabled>Save note</button>
+        <button type="button" id="remove" disabled>Remove</button>
+      </fieldset>
+      <fieldset>
+        <legend>Engine</legend>
+        <button type="button" id="mutate">Mutate content</button>
+        <button type="button" id="refresh">refresh()</button>
+        <button type="button" id="clear">clear()</button>
+        <button type="button" id="export">export()</button>
+        <button type="button" id="import">import()</button>
+        <button type="button" id="w3c">toW3C()</button>
+        <label><input type="checkbox" id="readonly" /> readOnly</label>
+      </fieldset>
+      <div id="list"></div>
+      <pre id="log"></pre>
+    </aside>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

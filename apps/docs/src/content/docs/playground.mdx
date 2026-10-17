@@ -1,0 +1,17 @@
+---
+title: Playground
+description: Try penciled's options live and inspect the annotation data.
+tableOfContents: false
+---
+
+import Playground from '../../components/Playground.astro';
+
+Annotate the article, change the options and watch the data change. The **Code** tab shows the `annotate()` call for the current options. **JSON** is what `instance.export()` returns, **W3C** is the same data as [W3C Web Annotations](/recipes/export-import/), and **Events** logs everything the instance emits.
+
+<Playground />
+
+The instance is also available as `window.penciled`, so you can call [its methods](/reference/instance/) from the browser console.
+
+:::note
+The theme option applies to the toolbar and note editor. Highlights follow the page's own color scheme, which you can switch with the toggle in the header. On this site, `auto` follows that toggle too, with two lines of CSS described in [Theming](/guides/theming/#following-a-dark-class).
+:::

@@ -1,0 +1,126 @@
+---
+title: React
+description: Use penciled in React with useAnnotations() or <Annotatable>.
+---
+
+`penciled/react` wraps [`annotate()`](/reference/options/) in a hook and a component that create the instance when the component mounts and destroy it when it unmounts. React 18 and later are supported.
+
+Because penciled never changes the DOM, React can re-render the annotated content as often as it likes. Highlights stay in place.
+
+## `<Annotatable>`
+
+The quickest way: wrap your content.
+
+```tsx
+import { Annotatable } from 'penciled/react';
+import 'penciled/styles.css';
+
+export function Article({ post }) {
+  return (
+    <Annotatable as="article" options={{ documentId: post.id }}>
+      <h1>{post.title}</h1>
+      <div dangerouslySetInnerHTML={{ __html: post.html }} />
+    </Annotatable>
+  );
+}
+```
+
+`as` sets the element to render (`div` by default). Other props, such as `className`, are passed to it. To reach the instance, pass a ref as `instanceRef`:
+
+```tsx
+import { Annotatable, type Annotator } from 'penciled/react';
+import { useRef } from 'react';
+
+export function Article({ children }) {
+  const annotations = useRef<Annotator | null>(null);
+  return (
+    <>
+      <button onClick={() => annotations.current?.clear()}>Clear highlights</button>
+      <Annotatable instanceRef={annotations}>{children}</Annotatable>
+    </>
+  );
+}
+```
+
+## `useAnnotations()`
+
+The hook annotates the element in a ref you provide, and returns the instance, or `null` before it is ready.
+
+```tsx
+import { useAnnotations } from 'penciled/react';
+import { useRef, useState } from 'react';
+
+export function Article({ post }) {
+  const ref = useRef<HTMLElement>(null);
+  const [count, setCount] = useState(0);
+  const annotations = useAnnotations(ref, {
+    documentId: post.id,
+    onLoad: (all) => setCount(all.length),
+    onCreate: () => setCount((n) => n + 1),
+    onDelete: () => setCount((n) => n - 1),
+  });
+
+  return (
+    <>
+      <p>
+        {count} highlights <button onClick={() => annotations?.clear()}>Clear</button>
+      </p>
+      <article ref={ref}>{/* … */}</article>
+    </>
+  );
+}
+```
+
+## How options update
+
+The instance is created once, so not every option can change on the fly:
+
+- Changing `documentId` or `readOnly` destroys the instance and creates a new one.
+- `theme` applies immediately, through `setTheme()`.
+- The `on…` callbacks always call their latest version, so inline functions are fine.
+- Other options are read when the instance is created. To apply a change, remount the component, for example with a `key`:
+
+```tsx
+<Annotatable key={colors.join()} options={{ colors }}>
+  {children}
+</Annotatable>
+```
+
+## Next.js and other SSR frameworks
+
+Importing `penciled/react` on the server is safe, and the instance is only created in the browser, in an effect. In the Next.js App Router, the component using the hook or `<Annotatable>` must be a client component:
+
+```tsx
+'use client';
+
+import { Annotatable } from 'penciled/react';
+
+export function AnnotatedArticle({ children }) {
+  return <Annotatable options={{ documentId: 'docs' }}>{children}</Annotatable>;
+}
+```
+
+Server components can be passed in as `children`. Import `penciled/styles.css` once, for example in your root layout.
+
+## Showing annotations in React
+
+Annotations live in the instance, not in React state. To render them, for example in a list of notes, copy them into state from the events:
+
+```tsx
+import type { Annotation, Annotator } from 'penciled';
+import { useEffect, useState } from 'react';
+
+function useAnnotationList(annotations: Annotator | null) {
+  const [list, setList] = useState<Annotation[]>([]);
+  useEffect(() => {
+    if (!annotations) return;
+    const sync = () => setList(annotations.getAll());
+    annotations.ready.then(sync);
+    const offs = ['create', 'update', 'delete'].map((e) => annotations.on(e as 'create', sync));
+    return () => offs.forEach((off) => off());
+  }, [annotations]);
+  return list;
+}
+```
+
+Each item can call `annotations.focus(item.id)` to scroll to it and open it.

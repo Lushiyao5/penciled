@@ -1,0 +1,192 @@
+---
+title: Instance
+description: The methods and properties of the object annotate() returns.
+---
+
+`annotate()` returns an `Annotator`. Every method that returns annotations returns copies: changing them has no effect. Use [`update()`](#update) instead.
+
+```ts
+const penciled = annotate('#article');
+await penciled.ready;
+
+const [first] = penciled.getAll();
+penciled.update(first.id, { color: 'green', note: 'Revisit this' });
+```
+
+## Properties
+
+### documentId
+
+**Type:** `string` (read-only)
+
+The id annotations are stored under. See the [`documentId` option](/reference/options/#documentid).
+
+### container
+
+**Type:** `Element` (read-only)
+
+The element passed to `annotate()`.
+
+### ready
+
+**Type:** `Promise<void>` (read-only)
+
+Resolves once stored annotations have been loaded and anchored. It also resolves when loading fails: the error goes to `onError`, and the instance doesn't save (see [Errors and offline](/recipes/rest-storage/#errors-and-offline)).
+
+## Reading
+
+### getAll()
+
+```ts
+getAll(): Annotation[]
+```
+
+Every annotation, in document order, including [orphans](/guides/anchoring/#orphans).
+
+### get()
+
+```ts
+get(id: string): Annotation | undefined
+```
+
+### getRange()
+
+```ts
+getRange(id: string): Range | null
+```
+
+A DOM `Range` over the annotation's text where it is now, or `null` if it is orphaned or unknown. Useful to position your own UI, or to scroll to the text.
+
+### annotationAt()
+
+```ts
+annotationAt(x: number, y: number): Annotation | undefined
+```
+
+The annotation painted at a point in the viewport, for example under the pointer. Where annotations overlap, the innermost one is returned.
+
+```ts
+document.addEventListener('contextmenu', (event) => {
+  const annotation = penciled.annotationAt(event.clientX, event.clientY);
+  if (annotation) console.log(annotation.note);
+});
+```
+
+## Changing
+
+### create()
+
+```ts
+create(range: Range, init?: AnnotationInit): Annotation | undefined
+```
+
+Annotates the text in `range`, clamped to the container, with leading and trailing whitespace trimmed. `init` can set `color`, `note`, `editable` and `meta`. If an annotation already covers exactly the same text, that annotation is returned unchanged. Returns `undefined` when the range holds no text.
+
+```ts
+const selection = getSelection();
+if (selection?.rangeCount) {
+  penciled.create(selection.getRangeAt(0), { color: 'blue', meta: { source: 'shortcut' } });
+}
+```
+
+Creating works even with `readOnly`: that option only restricts readers.
+
+### update()
+
+```ts
+update(id: string, patch: AnnotationPatch): Annotation | undefined
+```
+
+Changes an annotation's `color`, `note`, `editable` or `meta`, and returns the result. A `note` of `null` or `''` removes the note. `meta` is replaced, not merged. Returns `undefined` if there is no annotation with that id.
+
+### remove()
+
+```ts
+remove(id: string): void
+```
+
+### clear()
+
+```ts
+clear(): void
+```
+
+Removes every annotation in this document, emitting `delete` for each.
+
+### import()
+
+```ts
+import(data: ExportData | Annotation[], options?: { mode?: 'merge' | 'replace' }): void
+```
+
+Adds annotations, for example from [`export()`](#export) or your own backend, and anchors them against the current content. Annotations that don't fit the content become orphans.
+
+- `merge` (default) adds new annotations and replaces existing ones with the same `id`.
+- `replace` also removes every annotation that isn't in `data`.
+
+Invalid entries are skipped. See [Export, import and W3C](/recipes/export-import/).
+
+### export()
+
+```ts
+export(): ExportData
+```
+
+Returns `{ version: 1, documentId, annotations }`, ready for `JSON.stringify`.
+
+## Navigating
+
+### focus()
+
+```ts
+focus(id: string): void
+```
+
+Scrolls the annotation into view, marks it as active and opens the toolbar on it (in the headless build, emits `select`). Does nothing for orphans.
+
+### blur()
+
+```ts
+blur(): void
+```
+
+Closes whatever is open, the toolbar on a selection or on an annotation, and emits `select` with `null`.
+
+## Lifecycle
+
+### refresh()
+
+```ts
+refresh(): void
+```
+
+Re-anchors every annotation against the current content and repaints. penciled does this automatically when content changes, unless you set [`observe: false`](/reference/options/#observe).
+
+### setTheme()
+
+```ts
+setTheme(theme: 'light' | 'dark' | 'auto'): void
+```
+
+Changes the UI's color scheme. Not available in [`penciled/headless`](/reference/headless/), which has no UI.
+
+### on()
+
+```ts
+on(event: keyof AnnotatorEvents, listener: Function): () => void
+```
+
+Adds an event listener and returns a function that removes it. See [Events](/reference/events/).
+
+```ts
+const off = penciled.on('create', (annotation) => track('highlight', annotation.color));
+off();
+```
+
+### destroy()
+
+```ts
+destroy(): void
+```
+
+Saves pending changes, then removes every highlight, UI element, event listener and observer. Stored annotations are kept. Calling it twice is safe. Destroy the instance before removing its container from the page, or when you want to call `annotate()` again on the same element.

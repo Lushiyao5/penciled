@@ -1,0 +1,9 @@
+packages:
+  - packages/*
+  - apps/*
+
+packageExtensions:
+  # @astrojs/check's wasm fallback needs this peer, but nothing installs it.
+  '@napi-rs/wasm-runtime':
+    dependencies:
+      '@emnapi/core': '*'

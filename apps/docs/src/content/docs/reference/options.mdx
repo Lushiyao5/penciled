@@ -1,0 +1,166 @@
+---
+title: annotate() options
+description: Every option accepted by annotate().
+---
+
+```ts
+import { annotate } from 'penciled';
+
+function annotate(target: Element | string, options?: AnnotateOptions): Annotator;
+```
+
+`target` is the element whose text can be annotated, or a CSS selector for it. `annotate()` throws if the selector matches nothing. It returns an [instance](/reference/instance/).
+
+Every option is optional.
+
+```ts
+annotate('#article', {
+  documentId: 'article-123',
+  storage: 'local',
+  colors: ['yellow', 'green', 'blue', 'pink'],
+  defaultColor: 'yellow',
+  theme: 'auto',
+  actions: ['highlight', 'note', 'remove'],
+  onCreate: (annotation) => {},
+});
+```
+
+## Data and storage
+
+### documentId
+
+**Type:** `string`<br/>
+**Default:** `location.pathname`, plus `#` and the container's `id` if it has one
+
+Scopes stored annotations: each document id is loaded and saved separately. When several containers on one page have no id, the second and later ones get `#1`, `#2`, … appended. In development, penciled warns when you rely on the default. In single-page apps, set it explicitly.
+
+### storage
+
+**Type:** `'local' | 'memory' | AnnotationStorage`<br/>
+**Default:** `'local'`
+
+Where annotations are persisted.
+
+- `'local'` stores them in `localStorage` under `penciled:<documentId>`.
+- `'memory'` keeps nothing: annotations are lost on reload.
+- An [`AnnotationStorage`](/reference/types/#annotationstorage) object saves them wherever you like. See [Custom storage](/recipes/rest-storage/).
+
+Changes appear immediately and are saved in the background. If saving fails, for example because `localStorage` is full, the error goes to [`onError`](#onerror) and the UI keeps working. If loading fails, nothing is saved for the life of the instance, so annotations that couldn't be read are never overwritten (see [Errors and offline](/recipes/rest-storage/#errors-and-offline)).
+
+### saveDelay
+
+**Type:** `number`<br/>
+**Default:** `300`
+
+Milliseconds to wait before saving, so a burst of changes becomes one write. `0` saves every change immediately. Pending changes are always saved when the page is hidden or the instance is destroyed.
+
+### observe
+
+**Type:** `boolean`<br/>
+**Default:** `true`
+
+Re-anchors annotations when the container's content changes. With `false`, call [`refresh()`](/reference/instance/#refresh) yourself. See [Dynamic content](/guides/anchoring/#dynamic-content).
+
+## Appearance
+
+### colors
+
+**Type:** `(string | Color)[]`<br/>
+**Default:** `['yellow', 'green', 'blue', 'pink', 'purple']`
+
+The highlight colors offered in the toolbar, in order. Strings name a preset or a color defined in your CSS. [`Color`](/reference/types/#color) objects define new ones. See [Highlight colors](/guides/theming/#highlight-colors).
+
+### defaultColor
+
+**Type:** `string`<br/>
+**Default:** the first entry in `colors`
+
+The color of annotations created without one, and of annotations whose color is no longer in `colors`.
+
+### theme
+
+**Type:** `'light' | 'dark' | 'auto'`<br/>
+**Default:** `'auto'`
+
+The color scheme of the toolbar, note editor and note preview. `auto` follows `prefers-color-scheme`. Highlights follow the page's own `color-scheme` instead. Change it later with [`setTheme()`](/reference/instance/#settheme). See [Theming](/guides/theming/#light-dark-and-auto).
+
+### noteIndicator
+
+**Type:** `'underline' | false`<br/>
+**Default:** `false`
+
+With `'underline'`, highlights that have a note get a dotted underline.
+
+### notePreview
+
+**Type:** `'hover' | false`<br/>
+**Default:** `false`
+
+With `'hover'`, a highlight's note is shown when the mouse rests on it. Clicking still opens the toolbar. Touch and keyboard users see notes when the toolbar opens.
+
+### placement
+
+**Type:** `{ toolbar?: Placement | 'auto'; editor?: Placement; preview?: Placement }`<br/>
+**Default:** `{ toolbar: 'auto', editor: 'bottom', preview: 'top' }`
+
+Where the floating cards appear relative to the text. A [`Placement`](/reference/types/#placement) is `'top'`, `'bottom'`, `'top-start'`, `'top-end'`, `'bottom-start'` or `'bottom-end'`. The toolbar's `'auto'` is above the text, or below it on touch devices. Every card flips and shifts to stay on screen.
+
+## Interaction
+
+### actions
+
+**Type:** `(BuiltInAction | Action)[]`<br/>
+**Default:** `['highlight', 'note', 'remove']`
+
+The toolbar's buttons, in order. Built-in actions are `'highlight'` (one button per color), `'note'`, `'copy'` and `'remove'` (only shown on existing annotations). Custom actions are [`Action`](/reference/types/#action) objects. See the [“Ask AI” recipe](/recipes/ask-ai/).
+
+### readOnly
+
+**Type:** `boolean`<br/>
+**Default:** `false`
+
+Readers can open existing annotations and read their notes, but can't create, change or remove any. `copy` and custom actions are still shown. Your code can still change annotations through the instance. To lock only some annotations, set `editable: false` on them. See [Read-only annotations](/recipes/read-only/).
+
+### maxNoteLength
+
+**Type:** `number`<br/>
+**Default:** none
+
+The maximum number of characters in a note typed in the editor.
+
+### shortcuts
+
+**Type:** `{ toolbar?: string; next?: string; previous?: string } | false`<br/>
+**Default:** `{ toolbar: 'Alt+A', next: 'Alt+]', previous: 'Alt+[' }`
+
+Keyboard shortcuts. A shortcut is a combination of modifiers (`Alt`, `Ctrl`, `Shift`, `Meta`) and a key, joined with `+`. `false` turns them all off.
+
+- `toolbar` moves focus into the open toolbar. The toolbar never takes focus on its own, so readers who don't need it are never interrupted. Inside it, arrow keys move between buttons and `Escape` closes it and returns focus.
+- `next` and `previous` move to the next or previous annotation, scroll it into view, open it and announce it to screen readers.
+
+When several instances share a page, the shortcuts act on the one that holds the selection or focus.
+
+### labels
+
+**Type:** `Partial<Labels>`<br/>
+**Default:** English
+
+Replaces any of the UI's strings, including accessible names. See [`Labels`](/reference/types/#labels).
+
+## Events
+
+Each event has an option that registers a listener at creation. You can also add listeners later with [`on()`](/reference/instance/#on). See [Events](/reference/events/) for details.
+
+| Option | Called with |
+|---|---|
+| `onCreate` | The new `Annotation` |
+| `onUpdate` | The updated `Annotation` |
+| `onDelete` | The removed `Annotation` |
+| `onOrphan` | An `Annotation` whose text can no longer be found |
+| `onLoad` | Every `Annotation` loaded from storage |
+| `onError` | A storage error |
+| `onSelect` | A `SelectContext`, or `null` |
+
+### onError
+
+Without an `onError` option or an `error` listener, storage errors are logged with `console.error`.

@@ -1,0 +1,28 @@
+{
+  "name": "penciled-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.19.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm --filter penciled build",
+    "dev": "pnpm --filter penciled dev",
+    "playground": "pnpm --filter penciled playground",
+    "docs:dev": "pnpm build && pnpm --filter docs dev",
+    "docs:build": "pnpm build && pnpm --filter docs build",
+    "test": "pnpm --filter penciled test",
+    "test:e2e": "pnpm --filter penciled test:e2e",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "size": "pnpm --filter penciled size",
+    "changeset": "changeset",
+    "release": "pnpm build && changeset publish"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@changesets/cli": "^3.0.3"
+  }
+}

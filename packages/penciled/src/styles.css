@@ -1,0 +1,290 @@
+/*
+ * Default penciled styles. Every selector is wrapped in :where() (specificity 0), so host CSS
+ * always wins. Theme through the --penciled-* custom properties.
+ *
+ * Highlight colors use light-dark(), resolved against the page's own color-scheme: highlights sit
+ * on the page's background, not on penciled's UI.
+ */
+:where(:root) {
+  --penciled-yellow: light-dark(#fde04780, #facc1547);
+  --penciled-green: light-dark(#86efac80, #4ade803d);
+  --penciled-blue: light-dark(#93c5fd80, #60a5fa47);
+  --penciled-pink: light-dark(#f9a8d480, #f472b647);
+  --penciled-purple: light-dark(#c4b5fd80, #a78bfa4d);
+  --penciled-active: light-dark(#0000001a, #ffffff24);
+  --penciled-noted: underline dotted 2px;
+
+  --penciled-bg: light-dark(#fff, #18181b);
+  --penciled-fg: light-dark(#18181b, #fafafa);
+  --penciled-muted: light-dark(#71717a, #a1a1aa);
+  --penciled-border: light-dark(#e4e4e7, #ffffff1a);
+  --penciled-hover: light-dark(#f4f4f5, #ffffff12);
+  --penciled-accent: light-dark(#18181b, #fafafa);
+  --penciled-accent-fg: light-dark(#fff, #18181b);
+  --penciled-ring: light-dark(#2563eb, #60a5fa);
+  --penciled-radius: 10px;
+  --penciled-shadow: 0 1px 2px #0000000f, 0 6px 20px -4px #00000026;
+  --penciled-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --penciled-z: 2147483600;
+}
+
+::highlight(penciled-yellow),
+::highlight(penciled-yellow-noted) {
+  background-color: var(--penciled-yellow);
+}
+::highlight(penciled-green),
+::highlight(penciled-green-noted) {
+  background-color: var(--penciled-green);
+}
+::highlight(penciled-blue),
+::highlight(penciled-blue-noted) {
+  background-color: var(--penciled-blue);
+}
+::highlight(penciled-pink),
+::highlight(penciled-pink-noted) {
+  background-color: var(--penciled-pink);
+}
+::highlight(penciled-purple),
+::highlight(penciled-purple-noted) {
+  background-color: var(--penciled-purple);
+}
+::highlight(penciled-yellow-noted),
+::highlight(penciled-green-noted),
+::highlight(penciled-blue-noted),
+::highlight(penciled-pink-noted),
+::highlight(penciled-purple-noted) {
+  text-decoration: var(--penciled-noted);
+}
+/* The open or focused annotation, painted over its color. */
+::highlight(penciled-active) {
+  background-color: var(--penciled-active);
+}
+
+:where([data-penciled-popover]) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--penciled-z);
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  padding: 4px;
+  color: var(--penciled-fg);
+  background: var(--penciled-bg);
+  border: 1px solid var(--penciled-border);
+  border-radius: var(--penciled-radius);
+  box-shadow: var(--penciled-shadow);
+  font: 500 13px / 1.4 var(--penciled-font);
+  letter-spacing: normal;
+  text-align: start;
+  color-scheme: light dark;
+  transform-origin: 50% 100%;
+  transition:
+    opacity 150ms ease,
+    transform 150ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+:where([data-penciled-theme="light"]) {
+  color-scheme: light;
+}
+:where([data-penciled-theme="dark"]) {
+  color-scheme: dark;
+}
+:where([data-penciled-side="bottom"]) {
+  transform-origin: 50% 0;
+}
+@starting-style {
+  :where([data-penciled-popover]) {
+    opacity: 0;
+    transform: translateY(3px) scale(0.96);
+  }
+  :where([data-penciled-side="bottom"]) {
+    transform: translateY(-3px) scale(0.96);
+  }
+}
+:where([data-penciled-closing]) {
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none;
+}
+
+:where([data-penciled-popover] [role="toolbar"]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+:where([data-penciled-popover] button) {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: calc(var(--penciled-radius) - 4px);
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 100ms ease,
+    transform 100ms ease;
+}
+:where([data-penciled-popover] button:hover) {
+  background: var(--penciled-hover);
+}
+:where([data-penciled-popover] button:active) {
+  transform: scale(0.94);
+}
+:where([data-penciled-popover] button:focus-visible) {
+  outline: 2px solid var(--penciled-ring);
+  outline-offset: -1px;
+}
+:where([data-penciled-icon]) {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:where([data-penciled-swatch] > span) {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  /* Highlight colors are translucent; doubling the layer makes the swatch read clearly. */
+  background: linear-gradient(var(--penciled-swatch) 0 0), var(--penciled-swatch);
+  box-shadow: inset 0 0 0 1px light-dark(#0000001f, #ffffff29);
+  transition: transform 150ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+:where([data-penciled-swatch]:hover > span) {
+  transform: scale(1.15);
+}
+:where([data-penciled-swatch][aria-pressed="true"] > span) {
+  outline: 1.5px solid var(--penciled-fg);
+  outline-offset: 2px;
+  transform: scale(0.85);
+}
+/* A divider between the colors and the other actions. */
+:where([data-penciled-swatch] + :not([data-penciled-swatch])) {
+  position: relative;
+  margin-left: 9px;
+}
+:where([data-penciled-swatch] + :not([data-penciled-swatch]))::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--penciled-border);
+}
+
+:where([data-penciled-note]) {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 280px;
+  max-height: 40vh;
+  margin: 0;
+  padding: 4px 8px 6px;
+  overflow: auto;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+:where([data-penciled-note] + [role="toolbar"]:not([data-penciled-inline])) {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--penciled-border);
+}
+:where([data-penciled-popover]:has(> [data-penciled-note] + [data-penciled-inline])) {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+:where([data-penciled-note] + [data-penciled-inline]) {
+  flex: none;
+  flex-wrap: nowrap;
+}
+
+:where([data-penciled-editor]) {
+  display: grid;
+  gap: 4px;
+  width: 280px;
+  max-width: 100%;
+}
+:where([data-penciled-editor] textarea) {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: calc(2lh + 12px);
+  max-height: 40vh;
+  overflow: auto;
+  padding: 6px 8px;
+  font: 400 14px / 1.45 var(--penciled-font);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+:where([data-penciled-editor] textarea::placeholder) {
+  color: var(--penciled-muted);
+  opacity: 1;
+}
+:where([data-penciled-editor] > div) {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+:where([data-penciled-editor] button) {
+  padding: 0 10px;
+}
+:where([data-penciled-primary]),
+:where([data-penciled-primary]:hover) {
+  color: var(--penciled-accent-fg);
+  background: var(--penciled-accent);
+}
+:where([data-penciled-primary]:hover) {
+  opacity: 0.88;
+}
+:where([data-penciled-popover] kbd) {
+  font: inherit;
+  opacity: 0.6;
+}
+
+:where([data-penciled-live]) {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Larger touch targets. */
+@media (pointer: coarse) {
+  :where([data-penciled-popover] button) {
+    min-width: 36px;
+    height: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where([data-penciled-popover]),
+  :where([data-penciled-popover] *) {
+    transition-property: opacity;
+  }
+  @starting-style {
+    :where([data-penciled-popover]) {
+      transform: none;
+    }
+  }
+  :where([data-penciled-closing]),
+  :where([data-penciled-popover] button:active) {
+    transform: none;
+  }
+}

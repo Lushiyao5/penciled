@@ -1,0 +1,388 @@
+---
+// The interactive playground: options on one side, the live annotation data on the other.
+const placements = ['top', 'bottom', 'top-start', 'top-end', 'bottom-start', 'bottom-end'];
+---
+
+<div class="pg-wrap not-content">
+<div class="pg">
+  <section class="pg-stage" aria-label="Annotatable article">
+    <article id="playground-article" class="pd-article">
+      <h2>The Highlight API</h2>
+      <p>
+        Most annotation tools wrap highlighted text in extra elements. That works until the page
+        re-renders: a framework that owns the DOM throws the wrappers away, or trips over nodes it
+        didn't create. penciled leaves the page alone and paints highlights with the CSS Custom
+        Highlight API instead.
+      </p>
+      <p>
+        The browser keeps a registry of named highlights, each a set of ranges. A stylesheet then
+        styles them with the <code>::highlight()</code> pseudo-element, much like it styles a
+        selection. Nothing is added to the document, so nothing can be thrown away.
+      </p>
+      <p>
+        Finding the text again after a reload is the harder part. Each annotation stores the quoted
+        text, some context on either side and its position. When the page changes, penciled looks
+        for the quote, compares the context, and only highlights a match it is confident about.
+      </p>
+    </article>
+    <p class="pd-hint">
+      <span>Select text, click highlights, then change the options below.</span>
+      <span>Annotations here are saved under the document id <code>docs-playground</code>.</span>
+    </p>
+  </section>
+
+  <form class="pg-controls" id="pg-options" aria-label="Options">
+    <fieldset>
+      <legend>Appearance</legend>
+      <label>
+        Theme
+        <select name="theme">
+          <option value="auto">auto</option>
+          <option value="light">light</option>
+          <option value="dark">dark</option>
+        </select>
+      </label>
+      <label><input type="checkbox" name="noteIndicator" /> Underline highlights with a note</label>
+      <label><input type="checkbox" name="notePreview" /> Preview notes on hover</label>
+      <label><input type="checkbox" name="mint" /> Add a custom <code>mint</code> color</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Toolbar actions</legend>
+      <label><input type="checkbox" name="highlight" checked /> highlight</label>
+      <label><input type="checkbox" name="note" checked /> note</label>
+      <label><input type="checkbox" name="copy" /> copy</label>
+      <label><input type="checkbox" name="remove" checked /> remove</label>
+      <label><input type="checkbox" name="ask" /> Custom “Ask AI” action</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Behavior</legend>
+      <label><input type="checkbox" name="readOnly" /> Read-only</label>
+      <label><input type="checkbox" name="shortcuts" checked /> Keyboard shortcuts</label>
+      <label>
+        Max note length
+        <input type="number" name="maxNoteLength" min="0" step="10" placeholder="none" />
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Placement</legend>
+      <label>
+        Toolbar
+        <select name="toolbar">
+          <option value="auto">auto</option>
+          {placements.map((p) => <option value={p}>{p}</option>)}
+        </select>
+      </label>
+      <label>
+        Note editor
+        <select name="editor">
+          {placements.map((p) => <option value={p} selected={p === 'bottom'}>{p}</option>)}
+        </select>
+      </label>
+      <label>
+        Note preview
+        <select name="preview">
+          {placements.map((p) => <option value={p}>{p}</option>)}
+        </select>
+      </label>
+    </fieldset>
+
+    <div class="pg-buttons">
+      <button type="button" class="pd-button" id="pg-clear">Clear annotations</button>
+      <button type="button" class="pd-button" id="pg-reset">Reset options</button>
+    </div>
+  </form>
+
+  <section class="pg-output" aria-label="Output">
+    <div class="pg-tabs" role="tablist" aria-label="Output">
+      <button type="button" role="tab" aria-selected="true" data-tab="code">Code</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="json">JSON</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="w3c">W3C</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="events">Events</button>
+      <button type="button" class="pg-copy" id="pg-copy">Copy</button>
+    </div>
+    <pre id="pg-panel" role="tabpanel" tabindex="0"></pre>
+  </section>
+</div>
+</div>
+
+<script>
+  import {
+    type Action,
+    type AnnotateOptions,
+    type Annotation,
+    type Annotator,
+    type AnnotatorEvents,
+    annotate,
+    type BuiltInAction,
+    type Placement,
+    type SelectContext,
+    type Theme,
+    toW3C,
+  } from 'penciled';
+
+  type Tab = 'code' | 'json' | 'w3c' | 'events';
+
+  const form = document.querySelector<HTMLFormElement>('#pg-options')!;
+  const panel = document.querySelector<HTMLPreElement>('#pg-panel')!;
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-tab]')];
+  const log: string[] = [];
+  let tab: Tab = 'code';
+  let source = '';
+  let instance: Annotator | undefined;
+
+  const ASK: Action = {
+    id: 'ask-ai',
+    label: 'Ask AI',
+    icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>',
+    onSelect: (ctx) => record('ask-ai', `“${ctx.text}”`),
+  };
+
+  function record(event: string, detail: string) {
+    log.unshift(`${new Date().toLocaleTimeString()}  ${event.padEnd(7)} ${detail}`);
+    log.length = Math.min(log.length, 50);
+    if (tab === 'events') render();
+  }
+
+  const short = (text: string) => (text.length > 40 ? `“${text.slice(0, 39)}…”` : `“${text}”`);
+
+  // The options in the form, and the annotate() call that produces them.
+  function read(): { options: AnnotateOptions; code: string } {
+    const data = new FormData(form);
+    const on = (name: string) => data.has(name);
+    const value = (name: string) => `${data.get(name) ?? ''}`;
+    const actions = (['highlight', 'note', 'copy', 'remove'] as BuiltInAction[]).filter(on);
+    const max = Number(value('maxNoteLength'));
+    const placement = {
+      ...(value('toolbar') !== 'auto' && { toolbar: value('toolbar') as Placement }),
+      ...(value('editor') !== 'bottom' && { editor: value('editor') as Placement }),
+      ...(value('preview') !== 'top' && { preview: value('preview') as Placement }),
+    };
+    const shown: Record<string, unknown> = {
+      documentId: 'docs-playground',
+      ...(value('theme') !== 'auto' && { theme: value('theme') }),
+      ...(on('mint') && {
+        colors: [
+          'yellow',
+          'green',
+          'blue',
+          'pink',
+          'purple',
+          { name: 'mint', light: '#5eead480', dark: '#2dd4bf47' },
+        ],
+      }),
+      ...((actions.join() !== 'highlight,note,remove' || on('ask')) && {
+        actions: on('ask') ? [...actions, 'ASK'] : actions,
+      }),
+      ...(on('noteIndicator') && { noteIndicator: 'underline' }),
+      ...(on('notePreview') && { notePreview: 'hover' }),
+      ...(on('readOnly') && { readOnly: true }),
+      ...(!on('shortcuts') && { shortcuts: false }),
+      ...(max > 0 && { maxNoteLength: max }),
+      ...(Object.keys(placement).length && { placement }),
+    };
+    const options = {
+      ...shown,
+      theme: value('theme') as Theme,
+      actions: on('ask') ? [...actions, ASK] : actions,
+    } as AnnotateOptions;
+    const code = `annotate('#article', ${JSON.stringify(shown, null, 2)
+      .replace(/"([a-zA-Z]+)":/g, '$1:')
+      .replace(/"/g, "'")
+      .replace("'ASK'", "{ id: 'ask-ai', label: 'Ask AI', icon, onSelect }")});`;
+    return { options, code };
+  }
+
+  function render() {
+    for (const t of tabs) t.setAttribute('aria-selected', `${t.dataset.tab === tab}`);
+    const annotations = instance?.getAll() ?? [];
+    panel.textContent =
+      tab === 'code'
+        ? `import { annotate } from 'penciled';\nimport 'penciled/styles.css';\n\n${source}`
+        : tab === 'json'
+          ? JSON.stringify(instance?.export(), null, 2)
+          : tab === 'w3c'
+            ? JSON.stringify(toW3C(annotations), null, 2)
+            : log.join('\n') || 'Events appear here as you annotate.';
+  }
+
+  function start() {
+    const { options, code } = read();
+    source = code;
+    instance?.destroy();
+    instance = annotate('#playground-article', options);
+    // How each event is summarized in the Events tab.
+    const events: Record<keyof AnnotatorEvents, (arg: never) => string> = {
+      load: (all: Annotation[]) => `${all.length} annotation(s)`,
+      create: (a: Annotation) => `${a.color} ${short(a.quote)}`,
+      update: (a: Annotation) => `${a.color} ${short(a.quote)}${a.note ? ' with a note' : ''}`,
+      delete: (a: Annotation) => short(a.quote),
+      orphan: (a: Annotation) => short(a.quote),
+      error: (e: unknown) => String(e),
+      select: (ctx: SelectContext | null) => (ctx ? short(ctx.text) : 'null'),
+    };
+    for (const [name, describe] of Object.entries(events)) {
+      instance.on(name as keyof AnnotatorEvents, ((arg: never) => {
+        record(name, describe(arg));
+        if (name !== 'select' && tab !== 'events') render();
+      }) as never);
+    }
+    Object.assign(window, { penciled: instance });
+    render();
+  }
+
+  form.addEventListener('change', (e) => {
+    // The theme applies live through setTheme(), without recreating the instance.
+    if ((e.target as HTMLElement).getAttribute('name') !== 'theme') return start();
+    const { code } = read();
+    source = code;
+    instance?.setTheme(new FormData(form).get('theme') as Theme);
+    render();
+  });
+  document.querySelector('#pg-clear')!.addEventListener('click', () => instance?.clear());
+  document.querySelector('#pg-reset')!.addEventListener('click', () => {
+    form.reset();
+    start();
+  });
+  document.querySelector('#pg-copy')!.addEventListener('click', (e) => {
+    const button = e.currentTarget as HTMLButtonElement;
+    navigator.clipboard?.writeText(panel.textContent ?? '');
+    button.textContent = 'Copied';
+    setTimeout(() => (button.textContent = 'Copy'), 1200);
+  });
+  for (const t of tabs) {
+    t.addEventListener('click', () => {
+      tab = t.dataset.tab as Tab;
+      render();
+    });
+  }
+
+  start();
+</script>
+
+<style>
+  .pg-wrap {
+    container-type: inline-size;
+  }
+  .pg {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @container (min-width: 40rem) {
+    .pg {
+      grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+    }
+    .pg-stage {
+      grid-column: 1 / -1;
+    }
+  }
+  .pg-stage,
+  .pg-controls,
+  .pg-output {
+    background: var(--sl-color-bg-nav);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+  }
+  .pg-stage {
+    padding: 1.5rem 2rem;
+  }
+  .pg-stage .pd-article code {
+    font-size: 0.85em;
+  }
+
+  .pg-controls {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+    padding: 1.25rem;
+    font-size: var(--sl-text-sm);
+  }
+  .pg-controls fieldset {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .pg-controls legend {
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  .pg-controls label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--sl-color-gray-2);
+  }
+  .pg-controls select,
+  .pg-controls input[type='number'] {
+    margin-left: auto;
+    width: 8.5rem;
+    font: inherit;
+    padding: 0.15rem 0.35rem;
+    color: var(--sl-color-white);
+    background: var(--sl-color-bg);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.375rem;
+  }
+  .pg-controls input[type='checkbox'] {
+    accent-color: var(--sl-color-accent);
+  }
+  .pg-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .pg-output {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .pg-tabs {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--sl-color-hairline);
+  }
+  .pg-tabs button {
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    padding: 0.25rem 0.75rem;
+    color: var(--sl-color-gray-3);
+    background: none;
+    border: 0;
+    border-radius: 0.5rem;
+    cursor: pointer;
+  }
+  .pg-tabs button:hover,
+  .pg-tabs [aria-selected='true'] {
+    color: var(--sl-color-white);
+    background: var(--sl-color-gray-6);
+  }
+  .pg-tabs button:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+  }
+  .pg-tabs .pg-copy {
+    margin-left: auto;
+  }
+  #pg-panel {
+    flex: 1;
+    margin: 0;
+    min-height: 20rem;
+    max-height: 36rem;
+    overflow: auto;
+    padding: 1rem 1.25rem;
+    font-family: var(--__sl-font-mono);
+    font-size: var(--sl-text-xs);
+    line-height: 1.6;
+    white-space: pre;
+    background: none;
+    border: 0;
+  }
+</style>

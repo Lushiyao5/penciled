@@ -1,0 +1,45 @@
+/*
+ * The site's palette: graphite, warm near-monochrome grays, like pencil on paper. The only color
+ * on the page comes from the highlights. Themes switch with `data-theme` on <html>, the same
+ * mechanism (and storage key) Starlight uses, so the landing page and the docs stay in sync.
+ */
+:root {
+  --pd-bg: #141413;
+  --pd-paper: #1b1a18;
+  --pd-fg: #ece9e4;
+  --pd-text: #c9c5be;
+  --pd-muted: #8f8b84;
+  --pd-faint: #5f5c56;
+  --pd-hairline: #2a2926;
+  --pd-hairline-strong: #3a3834;
+  --pd-ring: #7aa7f5;
+
+  --pd-serif: "Source Serif 4 Variable", ui-serif, Georgia, serif;
+  --pd-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --pd-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --pd-bg: #fbfaf8;
+  --pd-paper: #f3f1ed;
+  --pd-fg: #1c1b19;
+  --pd-text: #3d3b37;
+  --pd-muted: #6f6b64;
+  --pd-faint: #a8a49d;
+  --pd-hairline: #e7e4de;
+  --pd-hairline-strong: #d6d2cb;
+  --pd-ring: #2563eb;
+
+  color-scheme: light;
+}
+
+/* penciled's own UI, matched to the site. */
+:root {
+  --penciled-font: var(--pd-sans);
+  --penciled-bg: light-dark(#fff, #201f1d);
+  --penciled-border: light-dark(#e7e4de, #ffffff14);
+  --penciled-accent: var(--pd-fg);
+  --penciled-accent-fg: var(--pd-bg);
+  --penciled-ring: var(--pd-ring);
+}

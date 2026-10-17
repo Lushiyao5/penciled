@@ -1,0 +1,106 @@
+---
+title: “Ask AI” action
+description: Add a custom toolbar action that sends the selected text to an AI model.
+---
+
+Custom actions add your own buttons to the toolbar. This recipe adds an “Ask AI” button that explains the selected passage and saves the answer as a note on a new highlight.
+
+## A custom action
+
+An action needs an `id`, a `label` and an `onSelect` function. `icon` is optional: SVG markup or an element. Without it, the label is shown as text.
+
+```ts
+import { annotate, type Action } from 'penciled';
+import 'penciled/styles.css';
+
+const sparkles =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>';
+
+const askAI: Action = {
+  id: 'ask-ai',
+  label: 'Ask AI',
+  icon: sparkles,
+  onSelect: (ctx) => explain(ctx),
+};
+
+const penciled = annotate('#article', {
+  actions: ['highlight', 'note', askAI, 'remove'],
+});
+```
+
+`onSelect` receives a [`SelectContext`](/reference/types/#selectcontext):
+
+- `text`: the selected text, or the text of the annotation that was clicked.
+- `range`: where that text is.
+- `annotation`: set when the reader clicked an existing annotation.
+- `editable`: whether the reader may change it (`false` in read-only mode).
+
+The toolbar closes after `onSelect` runs. Icons use `currentColor`, so they follow the theme.
+
+## Saving the answer as a note
+
+`explain()` highlights the passage, if it isn't already, and fills in the note when the answer arrives:
+
+```ts
+import type { SelectContext } from 'penciled';
+
+async function explain(ctx: SelectContext) {
+  const annotation = ctx.annotation ?? penciled.create(ctx.range, { color: 'purple' });
+  if (!annotation) return;
+  getSelection()?.removeAllRanges();
+  penciled.update(annotation.id, { note: 'Thinking…' });
+
+  try {
+    const res = await fetch('/api/explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passage: ctx.text, page: document.title }),
+    });
+    const { answer } = await res.json();
+    penciled.update(annotation.id, { note: answer, meta: { source: 'ai' } });
+    penciled.focus(annotation.id); // open it to show the answer
+  } catch {
+    penciled.update(annotation.id, { note: 'Couldn’t get an explanation. Try again.' });
+  }
+}
+```
+
+The `meta` field is stored with the annotation and returned untouched, so you can tell AI notes apart later, for example to style or filter them.
+
+Call the model from your server, never from the browser: an API key in client code is public. A minimal endpoint with the [Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript):
+
+```ts
+// app/api/explain/route.ts (Next.js)
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic(); // reads ANTHROPIC_API_KEY
+
+export async function POST(request: Request) {
+  const { passage, page } = await request.json();
+  const message = await client.messages.create({
+    model: 'claude-haiku-5-5',
+    max_tokens: 300,
+    messages: [
+      {
+        role: 'user',
+        content: `Explain this passage from "${page}" in two or three plain sentences:\n\n${passage}`,
+      },
+    ],
+  });
+  const block = message.content[0];
+  return Response.json({ answer: block?.type === 'text' ? block.text : '' });
+}
+```
+
+Notes are plain text and always displayed as text, so whatever the model returns can't inject HTML into your page.
+
+## Only on some annotations
+
+`onSelect` runs for whatever the toolbar is showing. To offer an action only in some situations, check the context and do nothing otherwise, or create the instance with different `actions`. Custom actions also appear in [read-only mode](/recipes/read-only/), so check `ctx.editable` before changing anything:
+
+```ts
+onSelect(ctx) {
+  if (!ctx.editable) return openChat(ctx.text); // ask without saving
+  explain(ctx);
+}
+```

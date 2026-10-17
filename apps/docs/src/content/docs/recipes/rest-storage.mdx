@@ -1,0 +1,124 @@
+---
+title: Custom storage (REST API)
+description: Save annotations to your own backend with a storage adapter.
+---
+
+By default annotations live in the reader's `localStorage`. To store them on your server, for example per signed-in user, pass a storage adapter: an object with async `load` and `save` methods.
+
+## The minimal adapter
+
+`save` receives every annotation in the document, so a backend that stores one JSON document per page needs only two endpoints:
+
+```ts
+import { annotate, type AnnotationStorage } from 'penciled';
+
+const storage: AnnotationStorage = {
+  async load(documentId) {
+    const res = await fetch(`/api/annotations/${encodeURIComponent(documentId)}`);
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`Loading annotations failed: ${res.status}`);
+    return res.json();
+  },
+  async save(documentId, annotations) {
+    const res = await fetch(`/api/annotations/${encodeURIComponent(documentId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(annotations),
+    });
+    if (!res.ok) throw new Error(`Saving annotations failed: ${res.status}`);
+  },
+};
+
+annotate('#article', { documentId: 'post-42', storage });
+```
+
+## One request per change
+
+For a REST API with a row per annotation, add `create`, `update` and `delete`. penciled then sends each change on its own instead of calling `save`:
+
+```ts
+const base = '/api/annotations';
+const json = (body: unknown) => ({
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+});
+
+async function send(url: string, init: RequestInit) {
+  const res = await fetch(url, { credentials: 'include', ...init });
+  if (!res.ok) throw new Error(`${init.method} ${url} failed: ${res.status}`);
+  return res;
+}
+
+const storage: AnnotationStorage = {
+  async load(documentId) {
+    const res = await send(`${base}?document=${encodeURIComponent(documentId)}`, { method: 'GET' });
+    return res.json();
+  },
+  async create(documentId, annotation) {
+    await send(base, { method: 'POST', ...json({ documentId, ...annotation }) });
+  },
+  async update(documentId, annotation) {
+    await send(`${base}/${annotation.id}`, { method: 'PUT', ...json({ documentId, ...annotation }) });
+  },
+  async delete(documentId, id) {
+    await send(`${base}/${id}`, { method: 'DELETE' });
+  },
+  // Still required, but only called for changes without a granular method.
+  async save() {},
+};
+```
+
+Changes made within [`saveDelay`](/reference/options/#savedelay) (300 ms by default) are combined per annotation: highlighting a passage and then picking another color sends one `POST`, and highlighting and then removing it sends nothing.
+
+## Storing the data
+
+[`Annotation`](/reference/types/#annotation) is flat on purpose, so it maps onto a table directly:
+
+```sql
+create table annotations (
+  id          uuid primary key,
+  document_id text not null,
+  user_id     text not null,
+  quote       text not null,
+  prefix      text not null,
+  suffix      text not null,
+  start       integer not null,
+  "end"       integer not null,
+  color       text not null,
+  note        text,
+  editable    boolean,
+  meta        jsonb,
+  created_at  timestamptz not null,
+  updated_at  timestamptz not null
+);
+```
+
+Store `quote`, `prefix`, `suffix`, `start` and `end` exactly as received: they're what lets penciled find the text again. Take the user from the request's session on the server, rather than trusting a field sent by the client.
+
+Notes are plain text typed by readers. penciled always displays them as text, so they're safe in its UI, but escape them wherever else you display them.
+
+## Errors and offline
+
+Saving is optimistic: a change appears immediately and is saved in the background. If a request fails, the error goes to `onError`, and the change stays on screen. penciled doesn't retry, so tell the reader:
+
+```ts
+annotate('#article', {
+  storage,
+  onError: () => showToast('Your highlights couldn’t be saved. Check your connection.'),
+});
+```
+
+If `load` fails, the error goes to `onError`, the instance starts empty and `ready` still resolves. The reader can keep highlighting, but nothing is saved for the rest of that instance's life: `save` replaces the whole document, so saving after a failed load could erase annotations that are still on the server. Create a new instance (for example after the reader reloads or retries) to load and save again. The built-in localStorage adapter is the exception: if its data can't be read, it's replaced on the next save.
+
+## Switching users or documents
+
+The document id is fixed for the life of an instance. When the signed-in user or the content changes, destroy the instance and create a new one:
+
+```ts
+let penciled = annotate('#article', { documentId: doc.id, storage });
+
+function onNavigate(next) {
+  penciled.destroy(); // saves pending changes first
+  penciled = annotate('#article', { documentId: next.id, storage });
+}
+```

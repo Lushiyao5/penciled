@@ -1,0 +1,30 @@
+---
+title: Browser support
+description: Which browsers penciled supports, and what happens in the others.
+---
+
+penciled draws highlights with the [CSS Custom Highlight API](/guides/anchoring/#how-highlights-are-drawn), and its default styles use CSS `light-dark()`. Both are supported in every current major browser:
+
+| Browser | Highlight API | With the default styles |
+|---|---|---|
+| Chrome, Edge (desktop and Android) | 105+ | 123+ |
+| Safari (macOS and iOS) | 17.2+ | 17.5+ |
+| Firefox (desktop and Android) | 140+ | 140+ |
+
+The **Highlight API** column is the minimum for the engine to work, for example with [`penciled/headless`](/reference/headless/) and your own styles. The **default styles** column is the minimum for `penciled/styles.css` to look right: in older versions `light-dark()` isn't understood, so highlight colors and the toolbar's colors don't apply.
+
+Desktop and mobile are both supported. On touch devices the toolbar opens below the selection, so it doesn't collide with the operating system's own selection menu, and its buttons are larger.
+
+## Unsupported browsers
+
+There is no fallback that wraps text in elements, because that would mean changing your DOM. In a browser without the Highlight API, `annotate()` logs a warning and returns an instance that does nothing: the page works as before, without annotations. Its methods are safe to call, `getAll()` returns an empty array and `ready` resolves immediately.
+
+To detect support yourself, for example to hide a hint about highlighting:
+
+```ts
+const supported = typeof CSS !== 'undefined' && 'highlights' in CSS;
+```
+
+## Server-side rendering
+
+Importing `penciled`, `penciled/headless` or `penciled/react` doesn't touch `window` or `document`, so it's safe in Node, Deno, Bun and edge runtimes. Only `annotate()` needs a browser.

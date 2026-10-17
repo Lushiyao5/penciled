@@ -1,0 +1,115 @@
+---
+title: Export, import and W3C
+description: Back up annotations, move them between devices and exchange them with other tools.
+---
+
+## Export
+
+`export()` returns the document's annotations as plain data, ready for `JSON.stringify`:
+
+```ts
+const data = penciled.export();
+// { version: 1, documentId: 'article-123', annotations: [...] }
+```
+
+For example, a “Download my notes” button:
+
+```ts
+function download() {
+  const blob = new Blob([JSON.stringify(penciled.export(), null, 2)], {
+    type: 'application/json',
+  });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${penciled.documentId.replace(/\W+/g, '-')}-annotations.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+```
+
+Orphaned annotations are included, so nothing is lost.
+
+## Import
+
+`import()` accepts what `export()` returns, or a bare array of annotations:
+
+```ts
+async function upload(file: File) {
+  penciled.import(JSON.parse(await file.text()));
+}
+```
+
+- By default, imported annotations are **merged**: new ones are added, and ones with the same `id` as an existing annotation replace it.
+- With `{ mode: 'replace' }`, every annotation that isn't in the data is removed too.
+
+```ts
+penciled.import(data, { mode: 'replace' });
+```
+
+Imported annotations are anchored against the current content, exactly like stored ones. Any that don't fit become [orphans](/guides/anchoring/#orphans) instead of highlighting the wrong text, so importing data meant for a different page is harmless. Entries that aren't valid annotations are skipped. Imports emit `create` and `update` events and are saved through the instance's storage.
+
+The `documentId` in the data is ignored: annotations are imported into the instance's own document.
+
+## W3C Web Annotations
+
+The [W3C Web Annotation Data Model](https://www.w3.org/TR/annotation-model/) is the standard format for exchanging annotations between tools. `toW3C()` and `fromW3C()` convert to and from it:
+
+```ts
+import { fromW3C, toW3C } from 'penciled';
+
+const w3c = toW3C(penciled.getAll(), { source: 'https://example.com/article' });
+penciled.import(fromW3C(w3c));
+```
+
+Each annotation becomes:
+
+```json
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "urn:uuid:5f0c…",
+  "type": "Annotation",
+  "motivation": "commenting",
+  "created": "2026-10-16T12:00:00.000Z",
+  "modified": "2026-10-16T12:05:00.000Z",
+  "body": {
+    "type": "TextualBody",
+    "value": "Worth rereading.",
+    "purpose": "commenting",
+    "format": "text/plain"
+  },
+  "target": {
+    "source": "https://example.com/article",
+    "selector": [
+      { "type": "TextQuoteSelector", "exact": "A margin is an invitation", "prefix": "…", "suffix": "…" },
+      { "type": "TextPositionSelector", "start": 412, "end": 437 }
+    ]
+  },
+  "penciled": { "color": "yellow" }
+}
+```
+
+- `motivation` is `commenting` when there is a note, and `highlighting` otherwise. Without a note there is no `body`.
+- `source` defaults to the current page's URL.
+- The `penciled` property keeps the color, `editable` and `meta`, so a round trip loses nothing. Other tools ignore it.
+- `TextPositionSelector` offsets are counted in penciled's [whitespace-collapsed text](/guides/anchoring/#what-is-stored), so they may not match tools that count raw text. The `TextQuoteSelector` is what matters: penciled re-anchors from the quote and its context.
+
+`fromW3C()` accepts one annotation or an array. Items without a `TextQuoteSelector` are skipped, and annotations without a penciled color get `options.color`, `'yellow'` by default:
+
+```ts
+const annotations = fromW3C(annotationsFromAnotherTool, { color: 'blue' });
+penciled.import(annotations);
+```
+
+## Moving annotations between devices
+
+Combining these is enough for a simple sync without a backend of your own, for example through a file or a cloud drive:
+
+```ts
+// device A
+const json = JSON.stringify(penciled.export());
+
+// device B
+penciled.import(JSON.parse(json)); // merge: keeps what's already here
+```
+
+For continuous sync, use a [storage adapter](/recipes/rest-storage/) instead.

@@ -1,0 +1,94 @@
+---
+title: Anchoring and limitations
+description: How penciled finds an annotation's text again, and what it can't do.
+---
+
+An annotation is only useful if it comes back on the right words. Pages change between visits: a typo is fixed, a paragraph is added, a framework renders slightly different markup. **Anchoring** is how penciled finds the annotated text again, and its one rule is that it never guesses. If it can't be confident, it doesn't highlight anything.
+
+## What is stored
+
+When a reader highlights a passage, penciled records:
+
+- `quote`: the exact selected text.
+- `prefix` and `suffix`: up to 32 characters before and after it.
+- `start` and `end`: its position in the container's text.
+
+All of these are measured in the container's text with every run of whitespace collapsed to one space. Re-indenting your HTML or reformatting it doesn't move anything. Text inside `script`, `style`, `template` and `noscript` elements is ignored.
+
+## How an annotation is restored
+
+When the page loads, and whenever the content changes, each annotation goes through these steps:
+
+1. **Position.** If the quote is still at its stored position and the text around it still mostly matches, that's the answer. This is the fast path, and covers most reloads.
+2. **Exact matches.** Otherwise every exact occurrence of the quote is a candidate, scored by how closely its surroundings match the stored prefix and suffix.
+3. **Fuzzy matches.** If the quote no longer appears exactly, penciled looks for close matches, allowing up to a quarter of the quote's characters to differ. A fixed typo or a reworded clause still anchors.
+4. **Confidence check.** A candidate is accepted only if its context is similar enough to the stored one, and if it clearly beats the runner-up. A long quote (20 characters or more) that appears exactly once is accepted even when its surroundings changed.
+
+When no candidate passes, the annotation is **orphaned**.
+
+## Orphans
+
+An orphaned annotation is one whose text can't be found with confidence. It is:
+
+- not highlighted;
+- reported once through the [`orphan` event](/reference/events/#orphan);
+- still returned by `getAll()` and `export()`, and still saved. Nothing is deleted.
+
+`getRange(id)` returns `null` for an orphan, which is how you can list them:
+
+```ts
+const orphans = penciled.getAll().filter((a) => !penciled.getRange(a.id));
+```
+
+If the text comes back, for example after an edit is reverted, the annotation anchors again on the next refresh. You might show orphans in a list with their quote and note, so readers can still read or delete them:
+
+```ts
+penciled.on('orphan', (annotation) => {
+  console.info(`Couldn't find “${annotation.quote}” any more`);
+});
+```
+
+Highlighting the wrong passage would be worse than highlighting nothing: a note attached to the wrong sentence is misleading, and a reader may not notice. So when a passage is repeated, for example a short phrase that appears several times, penciled relies on the surrounding text to tell the occurrences apart. If the surroundings changed too much to tell, it orphans the annotation.
+
+## Dynamic content
+
+By default penciled watches the container with a `MutationObserver`. When its content changes, it waits for the changes to settle (100 ms) and re-anchors every annotation. Its own UI is ignored, so this never loops. Content loaded after `annotate()` runs, such as comments fetched later or a page hydrated by a framework, is picked up automatically. Annotations whose text hasn't arrived yet are orphaned until it does, so the `orphan` event can fire for them before they anchor.
+
+For very large or constantly changing containers, turn the observer off and re-anchor yourself when you know the content changed:
+
+```ts
+const penciled = annotate('#article', { observe: false });
+
+await loadMoreContent();
+penciled.refresh();
+```
+
+The observer watches the container's contents, not the container itself. If your framework replaces the container element, for example when navigating between pages in a single-page app, destroy the instance and create a new one for the new element. The [React adapter](/recipes/react/) does this for you.
+
+### Performance
+
+Re-anchoring is fast enough to run on every change. In a 50,000-word article with 500 annotations, restoring them all, or re-anchoring them after content is inserted or edited, takes around 10 ms in current desktop browsers. Most annotations are found where they were stored, or shifted by the same amount as the annotation before them. The slower fuzzy search only runs for passages that were edited.
+
+Opening or creating one annotation repaints only the highlights that changed, so it stays quick however many annotations the page has.
+
+## How highlights are drawn
+
+penciled never modifies your DOM. Highlights are painted with the [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API): the browser is given a set of ranges and paints them, the way it paints a text selection. That has a few consequences:
+
+- Frameworks like React, Vue or Svelte can re-render the content freely. There are no wrapper elements for them to remove or trip over.
+- Your CSS, `querySelector` calls and copy-and-paste see the original markup.
+- Highlights can only be styled with a few properties: color, background color, text decoration and text shadow. Padding, borders and rounded corners aren't possible.
+
+Overlapping annotations are allowed. Where they overlap, the innermost one (the shortest) is painted on top, and clicking there opens it. Selecting exactly the text of an existing annotation opens that annotation instead of creating a duplicate.
+
+## Known limitations
+
+- **Shadow DOM and iframes.** Text inside shadow roots or iframes within the container isn't indexed, so it can't be annotated. A container inside an iframe can't be annotated from the parent page either: load penciled in the iframe's own document and call `annotate()` there.
+- **Right-to-left text.** Right-to-left and mixed-direction text (Arabic, Hebrew, English quotes inside them) is supported, because anchoring works on the text and the browser paints the highlights.
+- **Form fields.** Text in `<input>` and `<textarea>` elements isn't part of the document's text and can't be annotated.
+- **Hidden text counts.** Text hidden with CSS (`display: none`, a closed `<details>`) is still part of the container's text. That's harmless for anchoring, but toggling it in and out of the DOM is a content change like any other.
+- **Adjacent blocks.** Two elements with no whitespace between them (`<p>a</p><p>b</p>`) produce joined text (`ab`) in quotes. Anchoring isn't affected, because the same text is used for saving and restoring.
+- **Offsets.** `start` and `end` count UTF-16 code units in the whitespace-collapsed text, so they don't line up exactly with raw `textContent`. Tools that read penciled's [W3C export](/recipes/export-import/) should rely on the quote selector rather than the position.
+- **Large rewrites.** If a passage is rewritten by more than about a quarter, or moved somewhere with completely different surroundings, it's orphaned. This is deliberate.
+- **The stored quote isn't updated.** When a passage anchors through a fuzzy match, the annotation keeps its original quote. That keeps the original wording available, and lets the annotation anchor again if the edit is reverted.
+- **Browser support.** Without the Highlight API, `annotate()` warns and does nothing. See [Browser support](/guides/browser-support/).

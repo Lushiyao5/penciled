@@ -1,0 +1,234 @@
+/*
+ * Starlight, reskinned in the site's palette and type. Starlight's own styles live in cascade
+ * layers, so these unlayered rules win without extra specificity.
+ */
+:root {
+  --sl-font: var(--pd-sans);
+  --sl-font-mono: var(--pd-mono);
+  --sl-content-width: 42rem;
+  --sl-sidebar-width: 16rem;
+  --sl-line-height: 1.7;
+  --sl-text-code: 0.8125rem;
+
+  --sl-color-white: var(--pd-fg);
+  --sl-color-gray-1: #dcd8d1;
+  --sl-color-gray-2: var(--pd-text);
+  --sl-color-gray-3: var(--pd-muted);
+  --sl-color-gray-4: #6b6862;
+  --sl-color-gray-5: var(--pd-hairline-strong);
+  --sl-color-gray-6: var(--pd-hairline);
+  --sl-color-black: var(--pd-bg);
+  --sl-color-accent-low: var(--pd-paper);
+  --sl-color-accent: var(--pd-fg);
+  --sl-color-accent-high: var(--pd-fg);
+  --sl-color-text-accent: var(--pd-fg);
+  --sl-color-text-invert: var(--pd-bg);
+  --sl-color-bg-nav: var(--pd-bg);
+  --sl-color-bg-sidebar: var(--pd-bg);
+  --sl-color-bg-inline-code: var(--pd-paper);
+  --sl-color-hairline-light: var(--pd-hairline);
+  --sl-color-hairline: var(--pd-hairline);
+  --sl-color-hairline-shade: var(--pd-hairline);
+}
+:root[data-theme="light"] {
+  --sl-color-gray-1: #2a2926;
+  --sl-color-gray-4: #8f8b84;
+  --sl-color-gray-7: var(--pd-paper);
+}
+
+body {
+  background: var(--pd-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Header: no fill, just a hairline. */
+.header {
+  background: color-mix(in srgb, var(--pd-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+.site-title {
+  font-family: var(--pd-serif);
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--pd-fg);
+}
+
+/* Sidebar: no boxed active item; the current page is simply darker and heavier. */
+.sidebar-content a {
+  color: var(--pd-muted);
+}
+.sidebar-content a:hover,
+.sidebar-content a:focus {
+  color: var(--pd-fg);
+}
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover,
+.sidebar-content a[aria-current="page"]:focus {
+  color: var(--pd-fg);
+  background: none;
+  font-weight: 600;
+}
+.sidebar-content summary .large {
+  color: var(--pd-fg);
+  font-size: var(--sl-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sidebar-content ul ul li {
+  border-inline-start-color: var(--pd-hairline);
+}
+
+/* Page titles and headings in the reading serif. */
+#_top,
+.sl-markdown-content :is(h2, h3) {
+  font-family: var(--pd-serif);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--pd-fg);
+}
+#_top {
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  line-height: 1.15;
+}
+.sl-markdown-content h2 {
+  font-size: 1.625rem;
+}
+.sl-markdown-content h3 {
+  font-size: 1.25rem;
+}
+
+/* Links are underlined, not colored. */
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--pd-fg);
+  text-decoration: underline;
+  text-decoration-color: var(--pd-hairline-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color 120ms ease;
+}
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  text-decoration-color: var(--pd-fg);
+}
+
+.sl-markdown-content :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: 0.3rem;
+  font-size: 0.875em;
+}
+
+/* Tables: hairlines only. */
+.sl-markdown-content table {
+  font-size: var(--sl-text-sm);
+}
+.sl-markdown-content :is(th, td) {
+  border-color: var(--pd-hairline);
+  background: none;
+}
+.sl-markdown-content th {
+  color: var(--pd-fg);
+  font-weight: 600;
+}
+
+/* Asides: a quiet paper card instead of a colored banner. */
+.starlight-aside {
+  border: 1px solid var(--pd-hairline);
+  border-radius: 0.625rem;
+  background: var(--pd-paper);
+}
+.starlight-aside__title {
+  color: var(--pd-fg);
+}
+
+/* Cards, pagination and other boxed links. */
+.card,
+.sl-link-card,
+.pagination-links a {
+  border-color: var(--pd-hairline);
+  border-radius: 0.75rem;
+  box-shadow: none;
+  background: none;
+}
+.sl-link-card:hover,
+.pagination-links a:hover {
+  border-color: var(--pd-hairline-strong);
+  background: var(--pd-paper);
+}
+
+/* Tabs and steps. */
+starlight-tabs [role="tab"][aria-selected="true"] {
+  color: var(--pd-fg);
+  border-color: var(--pd-fg);
+}
+.sl-steps > li::before {
+  background: var(--pd-paper);
+  color: var(--pd-fg);
+  box-shadow: inset 0 0 0 1px var(--pd-hairline-strong);
+}
+
+:focus-visible {
+  outline-color: var(--pd-ring);
+}
+
+/* Code blocks sit on the paper tint, without a frame. */
+.expressive-code .frame {
+  box-shadow: none;
+}
+
+/* A top-level link (not a group) reads like a page link. */
+.sidebar-content .top-level > li > a.large {
+  font-size: var(--sl-text-sm);
+  font-weight: 400;
+  color: inherit;
+}
+
+/* No divider between the page title and the content. */
+.content-panel + .content-panel {
+  border-top: 0;
+}
+
+/* Search and theme select: hairline, no fill. */
+site-search button[data-open-modal] {
+  background: none;
+  border-color: var(--pd-hairline-strong);
+  border-radius: 0.5rem;
+  color: var(--pd-muted);
+}
+site-search button[data-open-modal]:hover {
+  border-color: var(--pd-muted);
+  color: var(--pd-fg);
+}
+site-search kbd {
+  background: var(--pd-paper);
+}
+
+/* Table of contents heading, like the sidebar's group labels. */
+starlight-toc h2,
+mobile-starlight-toc h2 {
+  color: var(--pd-fg);
+  font-size: var(--sl-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+starlight-toc a[aria-current="true"] {
+  color: var(--pd-fg);
+  font-weight: 500;
+}
+
+/* A smaller, quieter copy button. */
+.expressive-code .copy button {
+  width: 1.875rem;
+  height: 1.875rem;
+}
+.expressive-code .copy button {
+  background: transparent;
+}
+.expressive-code .copy button::after {
+  margin: 0.45rem;
+  mask-size: contain;
+  -webkit-mask-size: contain;
+  opacity: 0.6;
+}

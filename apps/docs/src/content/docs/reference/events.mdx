@@ -1,0 +1,92 @@
+---
+title: Events
+description: The events an instance emits, and when.
+---
+
+Listen to events with an option when creating the instance, or with [`on()`](/reference/instance/#on) later. Both can be used together.
+
+```ts
+const penciled = annotate('#article', {
+  onCreate: (annotation) => console.log('created', annotation),
+});
+
+const off = penciled.on('update', (annotation) => console.log('updated', annotation));
+```
+
+Listeners receive copies of annotations. A listener that throws is logged and doesn't affect other listeners or the instance.
+
+Events fire for changes made by readers and by your code alike, including [`import()`](/reference/instance/#import) and [`clear()`](/reference/instance/#clear).
+
+## create
+
+```ts
+(annotation: Annotation) => void
+```
+
+An annotation was created, by a reader or with `create()`. `import()` emits it for each annotation that wasn't there before.
+
+## update
+
+```ts
+(annotation: Annotation) => void
+```
+
+An annotation's color, note, `editable` flag or `meta` changed. `import()` emits it for each annotation it replaces.
+
+## delete
+
+```ts
+(annotation: Annotation) => void
+```
+
+An annotation was removed. Receives the annotation as it was.
+
+## orphan
+
+```ts
+(annotation: Annotation) => void
+```
+
+An annotation's text can no longer be found with confidence, so it is no longer highlighted. It stays in `getAll()` and in storage. This fires once each time an annotation goes from anchored (or newly loaded) to orphaned. See [Orphans](/guides/anchoring/#orphans).
+
+## load
+
+```ts
+(annotations: Annotation[]) => void
+```
+
+Stored annotations were loaded and anchored. Fires once, after `onOrphan` has fired for any that couldn't be anchored. At this point [`ready`](/reference/instance/#ready) resolves too.
+
+## error
+
+```ts
+(error: unknown) => void
+```
+
+Loading or saving failed. The annotations in memory, and the UI, are unaffected. Without a listener, errors are logged with `console.error`.
+
+```ts
+annotate('#article', {
+  storage: myApi,
+  onError: (error) => toast.error('Your highlights could not be saved'),
+});
+```
+
+## select
+
+```ts
+(context: SelectContext | null) => void
+```
+
+The reader selected text in the container, or opened an annotation by clicking it, by keyboard or through [`focus()`](/reference/instance/#focus). It fires with `null` when that is dismissed. This is what the default toolbar listens to, and what you use to build your own UI with [`penciled/headless`](/reference/headless/).
+
+```ts
+interface SelectContext {
+  text: string; // the selected or annotated text
+  range: Range; // where it is, for positioning UI
+  annotation?: Annotation; // set when an existing annotation was opened
+  editable: boolean; // false with `readOnly` or on an annotation with `editable: false`
+}
+```
+
+With `readOnly`, selecting text that isn't an annotation counts as no selection. Selecting exactly the text of an existing annotation opens that annotation.

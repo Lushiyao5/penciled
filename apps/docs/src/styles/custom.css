@@ -1,0 +1,65 @@
+/*
+ * Starlight switches themes with `data-theme` on <html> and sets `color-scheme` to match, so
+ * highlights already follow it. penciled's UI on `theme: 'auto'` follows the OS instead; these two
+ * rules make it follow the site toggle. See /guides/theming/.
+ */
+:root[data-theme="light"] [data-penciled-popover][data-penciled-theme="auto"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] [data-penciled-popover][data-penciled-theme="auto"] {
+  color-scheme: dark;
+}
+
+/* The annotatable articles on the landing page and in the playground. */
+.pd-article {
+  font-family: var(--pd-serif);
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--sl-color-white);
+}
+.pd-article h2 {
+  font-family: var(--pd-serif);
+  font-weight: 500;
+  font-size: 1.5rem;
+  margin: 0 0 0.75rem;
+}
+.pd-article p + p {
+  margin-top: 1rem;
+}
+.pd-article ::selection {
+  background: color-mix(in srgb, var(--pd-ring) 22%, transparent);
+}
+
+.pd-hint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-top: 1rem;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
+}
+.pd-hint kbd {
+  font: inherit;
+  font-size: 0.85em;
+  padding: 0 0.3em;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 4px;
+}
+
+.pd-button {
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  padding: 0.25rem 0.75rem;
+  color: var(--sl-color-white);
+  background: var(--sl-color-gray-6);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.pd-button:hover {
+  border-color: var(--sl-color-gray-4);
+}
+.pd-button:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}

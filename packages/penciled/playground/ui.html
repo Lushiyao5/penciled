@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>penciled UI playground</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font: 18px/1.7 Georgia, serif;
+      }
+      main {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 3rem;
+        margin: 3rem auto;
+        padding: 0 1.25rem;
+      }
+      article {
+        flex: 0 1 65ch;
+        min-width: 0;
+      }
+      aside {
+        flex: 0 0 300px;
+        position: sticky;
+        top: 1rem;
+        display: grid;
+        gap: 0.75rem;
+        max-height: calc(100vh - 2rem);
+        overflow: auto;
+        font: 13px/1.4 system-ui, sans-serif;
+      }
+      fieldset {
+        display: grid;
+        gap: 0.35rem;
+        margin: 0;
+        border: 1px solid #8884;
+        border-radius: 8px;
+      }
+      legend {
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      input[type='number'] {
+        width: 6em;
+      }
+      pre {
+        margin: 0;
+        padding: 0.6rem;
+        overflow: auto;
+        background: #8881;
+        border-radius: 8px;
+        font: 11.5px/1.45 ui-monospace, monospace;
+      }
+      @media (max-width: 900px) {
+        main {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        aside {
+          position: static;
+          max-height: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+    <article id="article">
+      <h1>The art of the marginal note</h1>
+      <p>
+        Long before software, readers argued with books in their margins. A
+        <em>marginal note</em> is a small act of attention: it marks the exact place where a thought
+        happened, and it only makes sense next to the words that caused it.
+      </p>
+      <p>
+        Pierre de Fermat famously wrote that he had a truly marvelous proof which this margin was
+        too narrow to contain. The note outlived its author by centuries, and the
+        <strong>margin</strong> became part of the story.
+      </p>
+      <p>
+        Digital annotation has to solve a problem paper never had: the text moves. Paragraphs are
+        edited, pages are re-rendered, and the words under a highlight may change. A good engine
+        follows the text when it can, and admits defeat when it cannot.
+      </p>
+    </article>
+
+    <!-- data-penciled: clicks and selections in this panel are not part of the annotated content. -->
+    <aside data-penciled>
+      <form id="options">
+        <fieldset>
+          <legend>Appearance</legend>
+          <label class="row">theme <select name="theme"><option selected>auto</option><option>light</option><option>dark</option></select></label>
+          <label class="row">noteIndicator <input type="checkbox" name="noteIndicator" checked /></label>
+          <label class="row">custom color <small>(mint)</small><input type="checkbox" name="mint" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>Behavior</legend>
+          <label class="row">notePreview: 'hover' <input type="checkbox" name="notePreview" checked /></label>
+          <label class="row">readOnly <input type="checkbox" name="readOnly" /></label>
+          <label class="row">shortcuts <input type="checkbox" name="shortcuts" checked /></label>
+          <label class="row">maxNoteLength <input type="number" name="maxNoteLength" min="1" placeholder="none" /></label>
+        </fieldset>
+        <fieldset>
+          <legend>Placement</legend>
+          <label class="row">toolbar <select name="toolbar"><option selected>auto</option><option>top</option><option>bottom</option><option>top-start</option><option>top-end</option><option>bottom-start</option><option>bottom-end</option></select></label>
+          <label class="row">editor <select name="editor"><option>top</option><option selected>bottom</option><option>top-start</option><option>top-end</option><option>bottom-start</option><option>bottom-end</option></select></label>
+          <label class="row">preview <select name="preview"><option selected>top</option><option>bottom</option><option>top-start</option><option>top-end</option><option>bottom-start</option><option>bottom-end</option></select></label>
+        </fieldset>
+        <fieldset>
+          <legend>Actions</legend>
+          <label class="row">highlight <input type="checkbox" name="highlight" checked /></label>
+          <label class="row">note <input type="checkbox" name="note" checked /></label>
+          <label class="row">copy <input type="checkbox" name="copy" checked /></label>
+          <label class="row">remove <input type="checkbox" name="remove" checked /></label>
+          <label class="row">custom (share) <input type="checkbox" name="share" /></label>
+        </fieldset>
+      </form>
+      <div class="buttons">
+        <button type="button" id="clear">clear()</button>
+        <button type="button" id="export">log export()</button>
+        <button type="button" id="reset">reset options</button>
+        <a href="./">engine playground</a>
+      </div>
+      <pre id="code"></pre>
+    </aside>
+    </main>
+    <script type="module" src="./ui.ts"></script>
+  </body>
+</html>

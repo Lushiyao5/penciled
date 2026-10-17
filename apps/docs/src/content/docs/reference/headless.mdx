@@ -1,0 +1,90 @@
+---
+title: penciled/headless
+description: The annotation engine without the default UI, for building your own.
+---
+
+`penciled/headless` is the engine on its own: anchoring, highlighting, storage and events, with no toolbar or note editor. It's about 6 kB min+gzip and has no dependencies. Use it when you want to build your own UI, or when annotations are only created by your code.
+
+```ts
+import { annotate } from 'penciled/headless';
+
+const penciled = annotate('#article');
+```
+
+The instance has the same methods and [events](/reference/events/) as the default build, except [`setTheme()`](/reference/instance/#settheme). Readers can still click highlights and select text: the engine reports both through the `select` event, and leaves the rest to you.
+
+## Options
+
+The headless build accepts the data and storage options, the event callbacks and:
+
+| Option | Type | Default |
+|---|---|---|
+| `colors` | `string[]` (names only) | `['yellow', 'green', 'blue', 'pink', 'purple']` |
+| `defaultColor` | `string` | The first entry in `colors` |
+| `readOnly` | `boolean` | `false` |
+| `noteIndicator` | `'underline' \| false` | `false` |
+
+See [annotate() options](/reference/options/) for `documentId`, `storage`, `saveDelay`, `observe` and the `on…` callbacks. The UI options (`theme`, `actions`, `labels`, `placement`, `shortcuts`, `maxNoteLength`, `notePreview`) don't exist here.
+
+## Styling highlights
+
+The engine registers one named highlight per color, `penciled-<color>`, plus `penciled-<color>-noted` with `noteIndicator: 'underline'`, and `penciled-active` for the annotation that is open. You can import the default styles for the presets:
+
+```ts
+import 'penciled/styles.css';
+```
+
+Or style the highlights yourself:
+
+```css
+::highlight(penciled-yellow),
+::highlight(penciled-yellow-noted) {
+  background-color: #fde04780;
+}
+::highlight(penciled-yellow-noted) {
+  text-decoration: underline dotted 2px;
+}
+::highlight(penciled-active) {
+  background-color: #0000001a;
+}
+```
+
+## Building your own toolbar
+
+Everything the default UI does goes through the public API. A minimal toolbar with one button:
+
+```ts
+import { annotate, type SelectContext } from 'penciled/headless';
+
+const penciled = annotate('#article');
+const button = document.createElement('button');
+button.textContent = 'Highlight';
+button.hidden = true;
+button.style.position = 'fixed';
+button.setAttribute('data-penciled', ''); // see below
+document.body.append(button);
+
+let current: SelectContext | null = null;
+
+penciled.on('select', (context) => {
+  current = context;
+  // Show the button for new selections only.
+  if (!context || context.annotation || !context.editable) {
+    button.hidden = true;
+    return;
+  }
+  const rect = context.range.getBoundingClientRect();
+  button.style.left = `${rect.left}px`;
+  button.style.top = `${rect.top - 40}px`;
+  button.hidden = false;
+});
+
+// Keep the text selected when the button is pressed.
+button.addEventListener('mousedown', (event) => event.preventDefault());
+button.addEventListener('click', () => {
+  if (current) penciled.create(current.range, { color: 'yellow' });
+  getSelection()?.removeAllRanges();
+});
+```
+
+Mark your UI's elements with a `data-penciled` attribute. The engine then ignores them: clicks inside them don't dismiss the current selection, their text is never annotated, and adding or removing them doesn't count as a content change.
