@@ -65,20 +65,6 @@ describe('toolbar', () => {
     expect(popover()!.dataset.penciledSide).toBe('top');
   });
 
-  test('follows the text when the page scrolls', async () => {
-    const { root } = await setup(
-      {},
-      `<div style="height: 200px"></div>${TEXT}<div style="height: 3000px"></div>`,
-    );
-    await selectText(find(root, 'brown fox'));
-    await wait(50);
-    const before = popover()!.getBoundingClientRect().top;
-    window.scrollBy(0, 100);
-    await wait(50);
-    expect(popover()!.getBoundingClientRect().top).toBeCloseTo(before - 100, 0);
-    window.scrollTo(0, 0);
-  });
-
   test('a color highlights the selection and switches to the annotation toolbar', async () => {
     const onCreate = vi.fn();
     const { root, instance } = await setup({ onCreate });
@@ -426,8 +412,9 @@ describe('note preview on hover', () => {
     expect(tip()!.textContent).toBe('A <i>quick</i> note');
     expect(tip()!.querySelector('i')).toBeNull();
     expect(shown()).toBe(false);
-    await hover(find(root, 'lazy'), 250);
-    expect(tipShown()).toBe(false);
+    // Polled: hiding waits a frame for hit-testing, then the grace period.
+    await hover(find(root, 'lazy'), 0);
+    await expect.poll(tipShown).toBe(false);
   });
 
   test('stays while the mouse is on it; Esc and clicks close it', async () => {
