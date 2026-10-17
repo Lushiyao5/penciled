@@ -20,6 +20,7 @@ Readers can now select text to highlight it, add a note, or click a highlight to
 ## Features
 
 - **Beautiful by default.** A floating toolbar and note editor that appear only when needed, in light and dark themes.
+- **Yours to style.** Theme the UI with CSS custom properties, or restyle anything: every default selector has zero specificity, so your CSS always wins. Need a different UI altogether? Go headless and build your own. See [Theming](https://penciled-nu.vercel.app/guides/theming/).
 - **Framework-agnostic.** Plain DOM, with an optional React adapter. Highlights are painted with the [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API), so your DOM is never modified.
 - **Reliable anchoring.** Highlights are re-anchored when the content changes. When penciled can't be sure where a highlight belongs, it leaves it out instead of highlighting the wrong text.
 - **Persistent.** Uses `localStorage` out of the box. Plug in your own storage adapter to save to a backend.
@@ -59,7 +60,7 @@ There is also a `useAnnotations(ref, options)` hook. See [React](https://pencile
 
 ## Headless
 
-`penciled/headless` is the engine without the UI. It handles anchoring, painting, persistence and events, and you build the interface.
+`penciled/headless` is the engine without the UI. It handles anchoring, painting, persistence and events, and you build the interface with whatever components and styles you already use.
 
 ```ts
 import { annotate } from 'penciled/headless';

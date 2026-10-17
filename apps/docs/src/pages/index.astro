@@ -8,6 +8,7 @@ import '../styles/tokens.css';
 import '../styles/custom.css';
 import '../styles/landing.css';
 import { Code } from '@astrojs/starlight/components';
+import { scoped, skins } from '../skins.ts';
 
 const github = 'https://github.com/marcellosso/penciled';
 const npm = 'https://www.npmjs.com/package/penciled';
@@ -110,6 +111,7 @@ export function Post({ post }) {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
     <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+    <style is:inline set:html={skins.filter((s) => s.inject).map(scoped).join('\n')} />
     <script is:inline>
       // Same storage key as the docs (Starlight), so the theme carries across.
       (() => {
@@ -237,6 +239,40 @@ export function Post({ post }) {
           anything else your app needs.
         </div>
         <Code code={action} lang="ts" />
+      </section>
+
+      <section class="block" aria-labelledby="b-style">
+        <h2 id="b-style">Make it yours</h2>
+        <p>
+          The toolbar and note editor are themed with CSS custom properties, and every default
+          selector has zero specificity, so your CSS always wins. Pick a look: every toolbar on this
+          page follows it.
+        </p>
+        <div class="specimen" id="ex-style">
+          Colors, corners, shadows and fonts are all yours to change. Select a few words here, or
+          open the note on this highlight.
+        </div>
+        <div class="skins" role="group" aria-label="Look">
+          {
+            skins.map((skin, i) => (
+              <button type="button" data-skin={skin.id} aria-pressed={i === 0 ? 'true' : 'false'}>
+                {skin.label}
+              </button>
+            ))
+          }
+        </div>
+        {
+          skins.map((skin, i) => (
+            <div class="skin-code" data-skin-code={skin.id} hidden={i !== 0}>
+              <Code code={skin.css} lang="css" />
+            </div>
+          ))
+        }
+        <p class="aside">
+          Need something else entirely? <code>penciled/headless</code> is the engine without the UI,
+          about 6&nbsp;kB, so you can build the toolbar from your own components.
+          <a href="/guides/theming/">Theming guide</a> · <a href="/reference/headless/">Headless</a>
+        </p>
       </section>
 
       <section class="block" aria-labelledby="b-storage">

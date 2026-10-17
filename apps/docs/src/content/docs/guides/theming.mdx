@@ -154,24 +154,33 @@ The UI properties use `light-dark()` too, so set both values to support both the
 
 ## Targeting the UI
 
-Every element penciled adds carries a `data-penciled` attribute, and the floating cards carry `data-penciled-popover`. The card's `data-penciled-side` attribute says where it ended up (`top`, `bottom`, …). Useful hooks:
+Every element penciled adds carries a `data-penciled` attribute, so you can restyle any part of the UI with plain CSS. These attributes are part of the public API: they follow semver, and won't be removed or renamed without a major version.
 
 | Selector | Element |
 |---|---|
-| `[data-penciled-popover]` | The toolbar card, and the note preview |
-| `[data-penciled-popover] [role='toolbar']` | The row of actions |
+| `[data-penciled]` | Every element penciled adds |
+| `[data-penciled-popover]` | Both floating cards |
+| `[data-penciled-popover='toolbar']` | The toolbar card, which also holds notes and the note editor |
+| `[data-penciled-popover='preview']` | The note preview shown on hover |
+| `[data-penciled-side]` | Where a card ended up: `top`, `bottom-start`, … Match a side with `^=`, as in `[data-penciled-side^='bottom']` |
+| `[data-penciled-theme]` | A card's theme: `light`, `dark` or `auto` |
 | `[data-penciled-swatch]` | A color button |
-| `[data-penciled-action='note']` | An action button, by id (`copy`, `remove`, `color-yellow`, your custom ids) |
-| `[data-penciled-note]` | A note shown in the toolbar or the preview |
+| `[data-penciled-action='<id>']` | An action button, by id: `note`, `copy`, `remove`, `color-<name>`, or your custom ids |
+| `[data-penciled-note]` | A note, in the toolbar or the preview |
 | `[data-penciled-editor]` | The note editor |
+| `[data-penciled-primary]` | The editor's Save button |
 
 ```css
-[data-penciled-popover] {
+[data-penciled-popover] button {
   border-radius: 999px;
+}
+
+[data-penciled-popover='preview'] [data-penciled-note] {
+  font-style: italic;
 }
 ```
 
-These are styling hooks, not a stable API. The markup inside the cards may change between minor versions until `1.0.0`.
+Only these attributes are stable. Other `data-penciled-*` attributes, and how the elements are nested inside a card, may change in any release. Prefer selectors built from the hooks above, like `[data-penciled-popover] button`, over ones that depend on structure, like `[data-penciled-popover] > div > button`.
 
 ## Toolbar actions
 

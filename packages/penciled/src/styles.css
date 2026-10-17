@@ -88,7 +88,7 @@
 :where([data-penciled-theme="dark"]) {
   color-scheme: dark;
 }
-:where([data-penciled-side="bottom"]) {
+:where([data-penciled-side^="bottom"]) {
   transform-origin: 50% 0;
 }
 @starting-style {
@@ -96,7 +96,7 @@
     opacity: 0;
     transform: translateY(3px) scale(0.96);
   }
-  :where([data-penciled-side="bottom"]) {
+  :where([data-penciled-side^="bottom"]) {
     transform: translateY(-3px) scale(0.96);
   }
 }
