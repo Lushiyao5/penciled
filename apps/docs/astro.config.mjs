@@ -2,13 +2,9 @@ import starlight from '@astrojs/starlight';
 import { defineConfig } from 'astro/config';
 import { graphiteDark, graphiteLight } from './src/code-themes.mjs';
 
-// The public URL, for canonical links, Open Graph and the sitemap. Set SITE_URL, or let Vercel
-// provide its production domain. Without either (local builds), those are left out.
-const site =
-  process.env.SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL &&
-    `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
-const ogImage = site ? new URL('/og.png', site).href : '/og.png';
+// The public URL, for canonical links, Open Graph and the sitemap. Set SITE_URL to override it.
+const site = process.env.SITE_URL ?? 'https://penciled.org';
+const ogImage = new URL('/og.png', site).href;
 
 export default defineConfig({
   site,
@@ -18,6 +14,7 @@ export default defineConfig({
       description:
         'A tiny, framework-agnostic JavaScript library for persistent text highlights and notes on any webpage.',
       favicon: '/favicon.svg',
+      components: { Head: './src/components/Head.astro' },
       head: [
         { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
         { tag: 'meta', attrs: { property: 'og:image', content: ogImage } },

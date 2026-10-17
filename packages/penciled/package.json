@@ -9,7 +9,7 @@
     "url": "git+https://github.com/marcellosso/penciled.git",
     "directory": "packages/penciled"
   },
-  "homepage": "https://github.com/marcellosso/penciled#readme",
+  "homepage": "https://penciled.org",
   "bugs": "https://github.com/marcellosso/penciled/issues",
   "keywords": [
     "annotation",

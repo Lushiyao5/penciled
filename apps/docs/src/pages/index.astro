@@ -8,6 +8,7 @@ import '../styles/tokens.css';
 import '../styles/custom.css';
 import '../styles/landing.css';
 import { Code } from '@astrojs/starlight/components';
+import Analytics from '@vercel/analytics/astro';
 import { scoped, skins } from '../skins.ts';
 
 const github = 'https://github.com/marcellosso/penciled';
@@ -125,6 +126,7 @@ export function Post({ post }) {
         document.documentElement.dataset.theme = theme;
       })();
     </script>
+    <Analytics />
   </head>
   <body>
     <header class="top">
