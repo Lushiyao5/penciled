@@ -31,7 +31,7 @@ A few decisions shape the whole library. Changes that go against them need a dis
 - **The host DOM is never modified.** Highlights are painted with the CSS Custom Highlight API, not wrapper elements, so penciled works alongside React, Vue or any other framework that owns the DOM. There is no fallback for browsers without the API.
 - **A wrong highlight is worse than a missing one.** Annotations store the quote, some surrounding context and its position. When the content changes and penciled can't find the quote with confidence, the annotation is *orphaned*: it isn't painted, but it stays available through the API.
 - **The engine is headless.** `src/engine/` handles anchoring, painting, persistence and events, and never imports the UI, React or Floating UI. The default UI (`src/ui/`) and the React adapter (`src/react/`) are built on top of it.
-- **Styles are easy to override.** The UI lives in the light DOM, every selector is wrapped in `:where()` (zero specificity), and theming goes through `--penciled-*` custom properties.
+- **Styles are easy to override.** The UI lives in the light DOM, every selector is wrapped in `:where()` (zero specificity; rules for penciled's own buttons and textarea add one `[data-penciled-popover]` so element resets don't strip them), and theming goes through `--penciled-*` custom properties.
 - **Small and dependency-light.** `@floating-ui/dom` is the only runtime dependency. `pnpm size` enforces the size budget.
 
 ## Tests

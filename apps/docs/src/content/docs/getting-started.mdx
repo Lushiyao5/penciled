@@ -59,7 +59,7 @@ penciled is below `1.0.0`, so the API may still change between minor versions. B
 @import 'penciled/styles.css';
 ```
 
-Every selector in it has zero specificity, so your own CSS always wins. See [Theming and customization](/guides/theming/).
+Its selectors have zero specificity, so your own CSS wins. Only penciled's buttons and note field carry one attribute, so element resets like Tailwind's preflight can't strip them. See [Theming and customization](/guides/theming/).
 
 ## Name the document
 

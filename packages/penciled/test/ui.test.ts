@@ -358,6 +358,44 @@ describe('colors and theme', () => {
     expect(getComputedStyle(popover()!).colorScheme).toBe('light');
   });
 
+  test('colors survive Lightning CSS rewriting light-dark() for older targets', async () => {
+    // What Next.js and Vite emit for `--penciled-yellow: light-dark(...)`.
+    const style = Object.assign(document.createElement('style'), {
+      textContent:
+        ':where(:root){--penciled-yellow:var(--lightningcss-light, rgb(1, 2, 3)) var(--lightningcss-dark, rgb(4, 5, 6))}',
+    });
+    document.head.append(style);
+    try {
+      const { root } = await setup();
+      await selectText(find(root, 'quick'));
+      const swatch = action('color-yellow')!.firstElementChild!;
+      expect(getComputedStyle(swatch).backgroundColor).toBe('rgb(1, 2, 3)');
+    } finally {
+      style.remove();
+    }
+  });
+
+  test('element resets like Tailwind preflight do not strip the editor', async () => {
+    const style = Object.assign(document.createElement('style'), {
+      textContent:
+        'button{background-color:transparent;padding:0}textarea{resize:vertical;padding:0}kbd{font-family:monospace}',
+    });
+    document.head.append(style);
+    try {
+      const { root } = await setup();
+      await selectText(find(root, 'quick'));
+      action('note')!.click();
+      const save = popover()!.querySelector('[data-penciled-primary]')!;
+      expect(getComputedStyle(save).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+      expect(getComputedStyle(save).paddingLeft).toBe('10px');
+      expect(getComputedStyle(field()!).resize).toBe('none');
+      expect(getComputedStyle(field()!).paddingLeft).toBe('8px');
+      expect(getComputedStyle(save.querySelector('kbd')!).fontFamily).not.toBe('monospace');
+    } finally {
+      style.remove();
+    }
+  });
+
   test('noteIndicator: underline paints noted annotations separately', async () => {
     const { root, instance } = await setup({ noteIndicator: 'underline' });
     instance.create(find(root, 'quick'), { note: 'x' });
