@@ -2,7 +2,9 @@
 
 Beautiful, persistent text highlights and notes for any webpage. Think **Sonner, for text annotations**.
 
-[Documentation](https://penciled-nu.vercel.app) · [Playground](https://penciled-nu.vercel.app/playground/) · [npm](https://www.npmjs.com/package/penciled)
+[Documentation](https://penciled.org) · [Playground](https://penciled.org/playground/) · [npm](https://www.npmjs.com/package/penciled)
+
+![Selecting a sentence, highlighting it in yellow and adding a note. After a reload the highlight comes back, and hovering it shows the note.](./.github/assets/demo.gif)
 
 ```sh
 npm install penciled
@@ -20,7 +22,7 @@ Readers can now select text to highlight it, add a note, or click a highlight to
 ## Features
 
 - **Beautiful by default.** A floating toolbar and note editor that appear only when needed, in light and dark themes.
-- **Yours to style.** Theme the UI with CSS custom properties, or restyle anything: every default selector has zero specificity, so your CSS always wins. Need a different UI altogether? Go headless and build your own. See [Theming](https://penciled-nu.vercel.app/guides/theming/).
+- **Yours to style.** Theme the UI with CSS custom properties, or restyle anything: every default selector has zero specificity, so your CSS always wins. Need a different UI altogether? Go headless and build your own. See [Theming](https://penciled.org/guides/theming/).
 - **Framework-agnostic.** Plain DOM, with an optional React adapter. Highlights are painted with the [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API), so your DOM is never modified.
 - **Reliable anchoring.** Highlights are re-anchored when the content changes. When penciled can't be sure where a highlight belongs, it leaves it out instead of highlighting the wrong text.
 - **Persistent.** Uses `localStorage` out of the box. Plug in your own storage adapter to save to a backend.
@@ -43,7 +45,7 @@ annotate('#article', {
 });
 ```
 
-Adapters can also implement `create`, `update` and `delete` to save one annotation at a time. See [Custom storage](https://penciled-nu.vercel.app/recipes/rest-storage/).
+Adapters can also implement `create`, `update` and `delete` to save one annotation at a time. See [Custom storage](https://penciled.org/recipes/rest-storage/).
 
 ## React
 
@@ -56,7 +58,7 @@ export function Article({ children }) {
 }
 ```
 
-There is also a `useAnnotations(ref, options)` hook. See [React](https://penciled-nu.vercel.app/recipes/react/).
+There is also a `useAnnotations(ref, options)` hook. See [React](https://penciled.org/recipes/react/).
 
 ## Headless
 
@@ -73,7 +75,7 @@ annotator.on('select', (context) => {
 
 ## Browser support
 
-Chrome and Edge 105+, Safari 17.2+ and Firefox 140+, on desktop and mobile. With the default styles, the minimums are Chrome and Edge 123+ and Safari 17.5+. In older browsers `annotate()` logs a warning and does nothing. Importing is safe during server-side rendering. See [Browser support](https://penciled-nu.vercel.app/guides/browser-support/).
+Chrome and Edge 105+, Safari 17.2+ and Firefox 140+, on desktop and mobile. With the default styles, the minimums are Chrome and Edge 123+ and Safari 17.5+. In older browsers `annotate()` logs a warning and does nothing. Importing is safe during server-side rendering. See [Browser support](https://penciled.org/guides/browser-support/).
 
 ## Development
 
