@@ -23,7 +23,7 @@ Instructions for AI coding agents working in this repo. Human contributors shoul
 - **Never write user-supplied text with `innerHTML`.** Use `textContent` or the `h()` helper in `ui/dom.ts`.
 - **Importing must be SSR-safe:** no access to `window` or `document` at module top level. `test/ssr.node.test.ts` checks this.
 - **Runtime dependencies:** `@floating-ui/dom` only. Ask before adding another.
-- **Styles:** wrap every selector in `:where()` and theme through `--penciled-*` custom properties.
+- **Styles:** wrap every selector in `:where()` and theme through `--penciled-*` custom properties. The one exception: rules for penciled's own `button`, `textarea` and `kbd` elements are written `[data-penciled-popover] :where(…)` (0,1,0), so element resets like Tailwind's preflight don't strip them. Keep every rule for those elements at that specificity, or the `all: unset` base rule overrides it.
 - **Size budget:** the default entry stays ≤ 15 kB, headless ≤ 6.5 kB and CSS ≤ 3 kB (min+gzip). Check with `pnpm build && pnpm size`.
 - **The stored data shape is versioned.** Changing `Annotation` needs a `version` bump and a migration in `normalize()` (`engine/util.ts`).
 

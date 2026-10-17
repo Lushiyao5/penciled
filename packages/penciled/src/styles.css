@@ -2,10 +2,22 @@
  * Default penciled styles. Every selector is wrapped in :where() (specificity 0), so host CSS
  * always wins. Theme through the --penciled-* custom properties.
  *
+ * The exception is penciled's own form controls, prefixed with an unwrapped [data-penciled-popover]
+ * (specificity 0,1,0): element resets like Tailwind's preflight or normalize.css (`button`,
+ * `textarea`) would otherwise strip them. Any host class still wins.
+ *
  * Highlight colors use light-dark(), resolved against the page's own color-scheme: highlights sit
  * on the page's background, not on penciled's UI.
  */
 :where(:root) {
+  /*
+   * Bundlers that run Lightning CSS for older targets (Next.js, Vite) rewrite light-dark() into
+   * these toggles, which only get set where a color-scheme is declared. Unset, every color here
+   * becomes invalid and highlights paint transparent, so default to light. A host color-scheme
+   * rule outranks :where().
+   */
+  --lightningcss-light: initial;
+  --lightningcss-dark: ;
   --penciled-yellow: light-dark(#fde04780, #facc1547);
   --penciled-green: light-dark(#86efac80, #4ade803d);
   --penciled-blue: light-dark(#93c5fd80, #60a5fa47);
@@ -112,7 +124,7 @@
   align-items: center;
   gap: 2px;
 }
-:where([data-penciled-popover] button) {
+[data-penciled-popover] :where(button) {
   all: unset;
   box-sizing: border-box;
   display: inline-flex;
@@ -130,13 +142,13 @@
     background-color 100ms ease,
     transform 100ms ease;
 }
-:where([data-penciled-popover] button:hover) {
+[data-penciled-popover] :where(button:hover) {
   background: var(--penciled-hover);
 }
-:where([data-penciled-popover] button:active) {
+[data-penciled-popover] :where(button:active) {
   transform: scale(0.94);
 }
-:where([data-penciled-popover] button:focus-visible) {
+[data-penciled-popover] :where(button:focus-visible) {
   outline: 2px solid var(--penciled-ring);
   outline-offset: -1px;
 }
@@ -168,7 +180,7 @@
   transform: scale(0.85);
 }
 /* A divider between the colors and the other actions. */
-:where([data-penciled-swatch] + :not([data-penciled-swatch])) {
+[data-penciled-popover] :where([data-penciled-swatch] + :not([data-penciled-swatch])) {
   position: relative;
   margin-left: 9px;
 }
@@ -217,7 +229,7 @@
   width: 280px;
   max-width: 100%;
 }
-:where([data-penciled-editor] textarea) {
+[data-penciled-popover] :where([data-penciled-editor] textarea) {
   all: unset;
   box-sizing: border-box;
   display: block;
@@ -231,7 +243,7 @@
   overflow-wrap: anywhere;
   cursor: text;
 }
-:where([data-penciled-editor] textarea::placeholder) {
+[data-penciled-popover] :where([data-penciled-editor] textarea)::placeholder {
   color: var(--penciled-muted);
   opacity: 1;
 }
@@ -240,18 +252,17 @@
   justify-content: flex-end;
   gap: 4px;
 }
-:where([data-penciled-editor] button) {
+[data-penciled-popover] :where([data-penciled-editor] button) {
   padding: 0 10px;
 }
-:where([data-penciled-primary]),
-:where([data-penciled-primary]:hover) {
+[data-penciled-popover] :where([data-penciled-primary], [data-penciled-primary]:hover) {
   color: var(--penciled-accent-fg);
   background: var(--penciled-accent);
 }
-:where([data-penciled-primary]:hover) {
+[data-penciled-popover] :where([data-penciled-primary]:hover) {
   opacity: 0.88;
 }
-:where([data-penciled-popover] kbd) {
+[data-penciled-popover] :where(kbd) {
   font: inherit;
   opacity: 0.6;
 }
@@ -267,7 +278,7 @@
 
 /* Larger touch targets. */
 @media (pointer: coarse) {
-  :where([data-penciled-popover] button) {
+  [data-penciled-popover] :where(button) {
     min-width: 36px;
     height: 36px;
   }
@@ -275,7 +286,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   :where([data-penciled-popover]),
-  :where([data-penciled-popover] *) {
+  [data-penciled-popover] :where(*) {
     transition-property: opacity;
   }
   @starting-style {
@@ -284,7 +295,7 @@
     }
   }
   :where([data-penciled-closing]),
-  :where([data-penciled-popover] button:active) {
+  [data-penciled-popover] :where(button:active) {
     transform: none;
   }
 }
