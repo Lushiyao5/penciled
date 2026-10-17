@@ -13,7 +13,7 @@ __screenshots__/
 !.env.example
 
 # Local planning notes and agent tooling
-docs/
+/docs/
 .claude/
 .cursor/
 .codex/

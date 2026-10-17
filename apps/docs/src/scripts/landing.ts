@@ -189,3 +189,28 @@ const render = () => {
 };
 for (const event of ['load', 'create', 'update', 'delete'] as const) domExample.on(event, render);
 render();
+
+// Make it yours: a look applies to the whole page, like the CSS it shows would.
+const style = example('#ex-style', [
+  { text: 'corners, shadows and fonts', color: 'yellow' },
+  {
+    text: 'this highlight',
+    color: 'green',
+    note: 'The note, its editor and the hover preview follow the same properties.',
+  },
+]);
+const skinButtons = document.querySelectorAll<HTMLButtonElement>('.skins button');
+for (const button of skinButtons) {
+  button.addEventListener('click', () => {
+    const id = button.dataset.skin!;
+    if (id === 'site') delete document.documentElement.dataset.skin;
+    else document.documentElement.dataset.skin = id;
+    for (const b of skinButtons) b.setAttribute('aria-pressed', String(b === button));
+    for (const code of document.querySelectorAll<HTMLElement>('[data-skin-code]')) {
+      code.hidden = code.dataset.skinCode !== id;
+    }
+    // Open the toolbar on a highlight so the change is visible right away.
+    const noted = style.getAll().find((a) => a.note);
+    if (noted) style.focus(noted.id);
+  });
+}

@@ -17,8 +17,7 @@ async function setup(options: AnnotateOptions = {}, html = TEXT) {
   return { root, instance };
 }
 
-const popover = () =>
-  document.querySelector<HTMLElement>('[data-penciled-popover]:not([role=tooltip])');
+const popover = () => document.querySelector<HTMLElement>('[data-penciled-popover=toolbar]');
 const shown = () => !!popover() && !popover()!.hasAttribute('data-penciled-closing');
 const toolbar = () => popover()?.querySelector<HTMLElement>('[role=toolbar]');
 const action = (key: string) =>
@@ -30,6 +29,21 @@ const press = (key: string, init: KeyboardEventInit = {}) =>
   (document.activeElement ?? document.body).dispatchEvent(
     new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }),
   );
+const hover = async (target: Range | Element, wait_ = 400) => {
+  const rect =
+    target instanceof Range ? target.getClientRects()[0]! : target.getBoundingClientRect();
+  const x = rect.left + 2;
+  const y = rect.top + rect.height / 2;
+  (document.elementFromPoint(x, y) ?? document.body).dispatchEvent(
+    new PointerEvent('pointermove', {
+      bubbles: true,
+      clientX: x,
+      clientY: y,
+      pointerType: 'mouse',
+    }),
+  );
+  await wait(wait_);
+};
 
 describe('toolbar', () => {
   test('appears on selection without taking focus, and hides when it is dismissed', async () => {
@@ -377,23 +391,8 @@ test('destroy() removes every UI node', async () => {
 });
 
 describe('note preview on hover', () => {
-  const tip = () => document.querySelector<HTMLElement>('[data-penciled-popover][role=tooltip]');
+  const tip = () => document.querySelector<HTMLElement>('[data-penciled-popover=preview]');
   const tipShown = () => !!tip() && !tip()!.hasAttribute('data-penciled-closing');
-  const hover = async (target: Range | Element, wait_ = 400) => {
-    const rect =
-      target instanceof Range ? target.getClientRects()[0]! : target.getBoundingClientRect();
-    const x = rect.left + 2;
-    const y = rect.top + rect.height / 2;
-    (document.elementFromPoint(x, y) ?? document.body).dispatchEvent(
-      new PointerEvent('pointermove', {
-        bubbles: true,
-        clientX: x,
-        clientY: y,
-        pointerType: 'mouse',
-      }),
-    );
-    await wait(wait_);
-  };
 
   test('is off by default', async () => {
     const { root, instance } = await setup();
@@ -485,4 +484,35 @@ test('icon-only actions sit beside the note', async () => {
   expect(toolbar()!.hasAttribute('data-penciled-inline')).toBe(true);
   expect(bar.left).toBeGreaterThanOrEqual(note.right);
   expect(bar.top).toBeCloseTo(note.top, -1);
+});
+
+// The documented styling hooks are public API: removing or renaming one is a breaking change.
+describe('styling hooks', () => {
+  test('the toolbar, its buttons, notes and the editor carry their attributes', async () => {
+    const { root, instance } = await setup({ theme: 'dark' });
+    instance.create(find(root, 'quick'), { note: 'A note' });
+    clickOn(find(root, 'quick'));
+    const card = popover()!;
+    expect(card.dataset.penciled).toBe('');
+    expect(card.dataset.penciledPopover).toBe('toolbar');
+    expect(card.dataset.penciledTheme).toBe('dark');
+    await expect.poll(() => card.dataset.penciledSide).toMatch(/^(top|bottom|left|right)/);
+    expect(card.querySelectorAll('[data-penciled-swatch]')).toHaveLength(5);
+    expect(card.querySelector<HTMLElement>('[data-penciled-swatch]')!.dataset.penciledAction).toBe(
+      'color-yellow',
+    );
+    expect(card.querySelector('[data-penciled-note]')!.textContent).toBe('A note');
+    action('note')!.click();
+    expect(card.querySelector('[data-penciled-editor] textarea')).not.toBeNull();
+    expect(card.querySelector('[data-penciled-editor] [data-penciled-primary]')).not.toBeNull();
+  });
+
+  test('the note preview carries its attributes', async () => {
+    const { root, instance } = await setup({ notePreview: 'hover' });
+    instance.create(find(root, 'quick'), { note: 'A note' });
+    await hover(find(root, 'quick'));
+    const preview = document.querySelector<HTMLElement>('[data-penciled-popover=preview]')!;
+    expect(preview.dataset.penciledTheme).toBe('auto');
+    expect(preview.querySelector('[data-penciled-note]')!.textContent).toBe('A note');
+  });
 });

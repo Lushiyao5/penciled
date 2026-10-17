@@ -65,8 +65,16 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
   let touch = false;
 
   /** A floating card positioned against the text of `range()`. */
-  const floater = (range: () => Range | null | undefined, side: () => Placement, role?: string) => {
-    const el = h('div', { 'data-penciled': '', 'data-penciled-popover': '', role });
+  const floater = (
+    range: () => Range | null | undefined,
+    side: () => Placement,
+    kind: 'toolbar' | 'preview',
+  ) => {
+    const el = h('div', {
+      'data-penciled': '',
+      'data-penciled-popover': kind,
+      role: kind === 'preview' ? 'tooltip' : undefined,
+    });
     let exit: ReturnType<typeof setTimeout> | undefined;
     const f = {
       el,
@@ -119,6 +127,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
       const side = editing ? (placement.editor ?? 'bottom') : (placement.toolbar ?? 'auto');
       return side === 'auto' ? (touch ? 'bottom' : 'top') : side;
     },
+    'toolbar',
   );
   const pop = card.el;
   // The annotation whose note is previewed on hover.
@@ -126,7 +135,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
   const tip = floater(
     () => (peeked ? instance.getRange(peeked) : null),
     () => placement.preview ?? 'top',
-    'tooltip',
+    'preview',
   );
   const setTheme = (theme: Theme) => {
     for (const el of [pop, tip.el]) el.setAttribute('data-penciled-theme', theme);

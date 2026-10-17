@@ -308,6 +308,47 @@ code {
   color: var(--pd-muted);
 }
 
+.skins {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 0.75rem;
+  padding: 3px;
+  border: 1px solid var(--pd-hairline);
+  border-radius: 999px;
+}
+.skins button {
+  padding: 0.3rem 0.85rem;
+  color: var(--pd-muted);
+  font: 500 0.8125rem / 1.4 var(--pd-sans);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+.skins button:hover {
+  color: var(--pd-fg);
+}
+.skins button[aria-pressed="true"] {
+  color: var(--pd-bg);
+  background: var(--pd-fg);
+}
+.skins button:focus-visible {
+  outline: 2px solid var(--pd-ring);
+  outline-offset: 1px;
+}
+.skin-code {
+  margin-top: 0.75rem;
+}
+.aside {
+  margin: 1rem 0 0;
+  color: var(--pd-muted);
+  font-size: 0.875rem;
+}
+
 .dom {
   margin-top: 0.75rem;
   padding: 1rem 1.125rem;
