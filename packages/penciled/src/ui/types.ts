@@ -17,6 +17,11 @@ export interface Color {
   dark?: string;
   /** Accessible name of the color. Defaults to `name`. */
   label?: string;
+  /**
+   * Keeps painting annotations that already use this color, without offering it in the toolbar
+   * for new ones. Use it to retire a color without changing existing highlights.
+   */
+  hidden?: boolean;
 }
 
 /** A custom toolbar action. The toolbar closes after `onSelect` runs. */
@@ -51,7 +56,10 @@ export interface Labels {
 
 /** Shortcuts such as `'Alt+A'`: modifiers (`Alt`, `Ctrl`, `Shift`, `Meta`) and a key. */
 export interface Shortcuts {
-  /** Moves focus into the toolbar. Defaults to `Alt+A`. */
+  /**
+   * Moves focus into the toolbar, first opening it for the selected text when `openOnSelect` is
+   * `false`. Defaults to `Alt+A`.
+   */
   toolbar?: string;
   /** Focuses the next annotation. Defaults to `Alt+]`. */
   next?: string;
@@ -90,6 +98,11 @@ export interface AnnotateOptions extends Omit<EngineOptions, 'colors'> {
   notePreview?: 'hover' | false;
   placement?: Placements;
   labels?: Partial<Labels>;
+  /**
+   * `false` keeps the toolbar closed when text is selected, until the `toolbar` shortcut opens it.
+   * Clicking an annotation still opens it. Defaults to `true`.
+   */
+  openOnSelect?: boolean;
   /** `false` disables the keyboard shortcuts. */
   shortcuts?: Shortcuts | false;
   /**
