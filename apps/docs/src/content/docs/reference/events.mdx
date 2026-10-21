@@ -90,3 +90,5 @@ interface SelectContext {
 ```
 
 With `readOnly`, selecting text that isn't an annotation counts as no selection. Selecting exactly the text of an existing annotation opens that annotation.
+
+Selections that start or end in editable content (`contenteditable`) aren't reported, so the toolbar never gets in the way of someone typing. Annotations on text being edited would go stale as soon as it changes.
