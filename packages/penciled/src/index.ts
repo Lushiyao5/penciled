@@ -12,5 +12,5 @@ export type {
   W3CSelector,
   W3CTarget,
 } from './engine/index.ts';
-export { fromW3C, toW3C } from './engine/index.ts';
+export { fromW3C, normalize, toW3C } from './engine/index.ts';
 export * from './ui/index.ts';

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { AnnotateOptions, Annotation, AnnotationStorage } from '../src/engine/types.ts';
-import { annotate, fromW3C, toW3C } from '../src/headless.ts';
+import { annotate, fromW3C, normalize, toW3C } from '../src/headless.ts';
 import { cleanup, find, mount, painted, track, wait } from './helpers.ts';
 
 afterEach(cleanup);
@@ -326,6 +326,46 @@ describe('export / import', () => {
       },
     ]);
     expect(storage.save).toHaveBeenCalledWith('doc', [expect.objectContaining({ id: 'q' })]);
+  });
+});
+
+describe('normalize', () => {
+  test('fills defaults and drops unknown fields', () => {
+    const a = normalize({ quote: 'quick', extra: true }, 'blue');
+    expect(a).toEqual({
+      version: 1,
+      id: expect.any(String),
+      quote: 'quick',
+      prefix: '',
+      suffix: '',
+      start: 0,
+      end: 0,
+      color: 'blue',
+      createdAt: expect.any(String),
+      updatedAt: a?.createdAt,
+    });
+    expect(normalize({ quote: 'quick' })?.color).toBe('yellow');
+  });
+
+  test('keeps a valid annotation as it is', async () => {
+    const { root, instance } = await setup({ storage: 'memory' });
+    const a = instance.create(find(root, 'quick'), { note: 'Fast', meta: { tag: 1 } })!;
+    expect(normalize(JSON.parse(JSON.stringify(a)))).toEqual(a);
+  });
+
+  test('rejects data that is not an annotation', () => {
+    for (const data of [
+      null,
+      undefined,
+      'quick',
+      42,
+      [],
+      {},
+      { quote: 3 },
+      { quote: 'a', version: 2 },
+    ]) {
+      expect(normalize(data)).toBeUndefined();
+    }
   });
 });
 

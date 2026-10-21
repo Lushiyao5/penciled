@@ -61,10 +61,12 @@ export function emitter<E>(): Emitter<E> {
 }
 
 /**
- * Fills defaults and drops unknown fields. Returns `undefined` for data that isn't a version-1
- * annotation. Once the shape changes, older versions are migrated here.
+ * Checks and upgrades an annotation read from storage or a file: fills defaults, drops unknown
+ * fields and migrates older versions. Returns `undefined` for data that isn't an annotation.
+ * Annotations without a color get `color`.
  */
-export function normalize(a: Partial<Annotation>, color: string): Annotation | undefined {
+export function normalize(data: unknown, color = 'yellow'): Annotation | undefined {
+  const a = data as Partial<Annotation> | undefined;
   if (typeof a?.quote !== 'string' || (a.version ?? 1) !== 1) return;
   const at = now();
   return {

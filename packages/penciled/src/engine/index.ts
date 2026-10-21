@@ -11,5 +11,6 @@ export type {
   ImportOptions,
   SelectContext,
 } from './types.ts';
+export { normalize } from './util.ts';
 export type { W3CAnnotation, W3CBody, W3CSelector, W3CTarget } from './w3c.ts';
 export { fromW3C, toW3C } from './w3c.ts';

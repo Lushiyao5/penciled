@@ -50,6 +50,18 @@ Imported annotations are anchored against the current content, exactly like stor
 
 The `documentId` in the data is ignored: annotations are imported into the instance's own document.
 
+### Checking data yourself
+
+To validate annotations without a running instance, for example on your server before storing an upload, use `normalize()`. It's what `import()` and stored data go through: it fills in defaults, drops unknown fields and upgrades data saved by older versions of penciled. It returns `undefined` for anything that isn't an annotation:
+
+```ts
+import { normalize } from 'penciled/headless';
+
+const annotations = data.annotations.map((a) => normalize(a)).filter((a) => a !== undefined);
+```
+
+Annotations without a color get the second argument, `'yellow'` by default.
+
 ## W3C Web Annotations
 
 The [W3C Web Annotation Data Model](https://www.w3.org/TR/annotation-model/) is the standard format for exchanging annotations between tools. `toW3C()` and `fromW3C()` convert to and from it:
