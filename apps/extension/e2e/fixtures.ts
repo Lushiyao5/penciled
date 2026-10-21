@@ -7,23 +7,32 @@ import {
   type Worker,
 } from '@playwright/test';
 
-/** A Chromium profile with the built extension loaded, and its background service worker. */
-export const test = base.extend<{ context: BrowserContext; background: Worker }>({
-  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixtures take their dependencies first.
-  context: async ({}, use) => {
-    const path = resolve(import.meta.dirname, '../.output/chrome-mv3');
-    const context = await chromium.launchPersistentContext('', {
-      channel: 'chromium',
-      args: [`--disable-extensions-except=${path}`, `--load-extension=${path}`],
-    });
-    await use(context);
-    await context.close();
+/**
+ * A Chromium profile with the built extension loaded, its background service worker, and the
+ * base URL of its pages.
+ */
+export const test = base.extend<{ context: BrowserContext; background: Worker; extension: string }>(
+  {
+    // biome-ignore lint/correctness/noEmptyPattern: Playwright fixtures take their dependencies first.
+    context: async ({}, use) => {
+      const path = resolve(import.meta.dirname, '../.output/chrome-mv3');
+      const context = await chromium.launchPersistentContext('', {
+        channel: 'chromium',
+        args: [`--disable-extensions-except=${path}`, `--load-extension=${path}`],
+      });
+      await use(context);
+      await context.close();
+    },
+    background: async ({ context }, use) => {
+      const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
+      await use(worker);
+    },
+    extension: async ({ background }, use) => {
+      // URL.origin is "null" for chrome-extension: URLs.
+      await use(background.url().split('/').slice(0, 3).join('/'));
+    },
   },
-  background: async ({ context }, use) => {
-    const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
-    await use(worker);
-  },
-});
+);
 
 export const { expect } = test;
 
@@ -72,8 +81,43 @@ export function painted(page: Page): Promise<Record<string, string[]>> {
 /** Everything the extension stored. */
 export function stored(background: Worker): Promise<Record<string, unknown>> {
   // Runs in the worker, where Chrome's extension API is `chrome`.
-  type Chrome = { chrome: typeof import('wxt/browser').browser };
   return background.evaluate(() =>
     (globalThis as unknown as Chrome).chrome.storage.local.get(null),
+  );
+}
+
+type Chrome = { chrome: typeof import('wxt/browser').browser };
+
+/** The id of the tab showing `page`, as the extension knows it. */
+export async function tabId(background: Worker, page: Page): Promise<number> {
+  // Without the `tabs` permission, which penciled doesn't ask for, tabs' URLs are hidden: the
+  // page is found as the active tab instead.
+  await page.bringToFront();
+  return background.evaluate(async () => {
+    const chrome = (globalThis as unknown as Chrome).chrome;
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    return tab!.id!;
+  });
+}
+
+/** Sends the content script in `page` a message, as the popup and the shortcut do. */
+export function send(background: Worker, page: Page, message: unknown): Promise<unknown> {
+  return tabId(background, page).then((id) =>
+    background.evaluate(
+      ([id, message]) => (globalThis as unknown as Chrome).chrome.tabs.sendMessage(id, message),
+      [id, message] as const,
+    ),
+  );
+}
+
+/** Writes to the extension's storage, as another tab or the settings page would. */
+export function store(
+  background: Worker,
+  area: 'local' | 'sync',
+  items: Record<string, unknown>,
+): Promise<void> {
+  return background.evaluate(
+    ([area, items]) => (globalThis as unknown as Chrome).chrome.storage[area].set(items),
+    [area, items] as const,
   );
 }

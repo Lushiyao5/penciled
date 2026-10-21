@@ -11,7 +11,7 @@ export interface PageMeta {
   updatedAt: string;
 }
 
-interface PageData {
+export interface PageData {
   version: 1;
   annotations: Annotation[];
 }
