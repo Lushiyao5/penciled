@@ -92,6 +92,12 @@ export interface AnnotateOptions extends Omit<EngineOptions, 'colors'> {
   labels?: Partial<Labels>;
   /** `false` disables the keyboard shortcuts. */
   shortcuts?: Shortcuts | false;
+  /**
+   * Where the toolbar, note preview and live region are added. Defaults to `document.body`. Pass a
+   * shadow root to keep page CSS away from the UI: its host is marked `data-penciled`, and
+   * `styles.css` must be loaded both in the shadow root and on the page, which paints highlights.
+   */
+  root?: Element | ShadowRoot;
 }
 
 export interface Annotator extends Engine {
