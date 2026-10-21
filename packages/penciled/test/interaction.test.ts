@@ -173,6 +173,23 @@ describe('selection', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  test('selections in editable content are not reported', async () => {
+    const { root, onSelect, last } = await setup(
+      {},
+      `${TEXT}<div contenteditable>An editable draft.</div>`,
+    );
+    await selectText(find(root, 'editable draft'));
+    expect(onSelect).not.toHaveBeenCalled();
+    // Partly in the editor.
+    const crossing = document.createRange();
+    crossing.setStart(find(root, 'lazy').startContainer, 0);
+    crossing.setEnd(find(root, 'editable').endContainer, 3);
+    await selectText(crossing);
+    expect(onSelect).not.toHaveBeenCalled();
+    await selectText(find(root, 'brown'));
+    expect(last()?.text).toBe('brown');
+  });
+
   test('pointer selections are reported on pointerup, not while dragging', async () => {
     const { root, onSelect, last } = await setup();
     document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));

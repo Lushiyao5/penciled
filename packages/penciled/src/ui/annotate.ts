@@ -58,6 +58,12 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
   const labels = { ...LABELS, ...options.labels };
   const colors = (options.colors ?? PRESETS).map((c) => (typeof c === 'string' ? { name: c } : c));
   const instance = engine(target, { ...options, colors: colors.map((c) => c.name) }) as Annotator;
+  const root = options.root ?? document.body;
+  // Marked so the engine treats it as UI: events from inside a shadow root are retargeted to it.
+  if (root instanceof ShadowRoot) root.host.setAttribute('data-penciled', '');
+  const scope = root.getRootNode() as Document | ShadowRoot;
+  // Focus inside a shadow root shows up on the document as its host.
+  const focused = () => (scope.activeElement ?? document.activeElement) as HTMLElement | null;
 
   // What the card shows: a selection or an annotation.
   let ctx: SelectContext | null = null;
@@ -108,7 +114,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
         el.removeAttribute('data-penciled-closing');
         el.replaceChildren(...content);
         f.open = true;
-        if (!el.isConnected) document.body.append(el);
+        if (!el.isConnected) root.append(el);
         f.place();
       },
       hide() {
@@ -146,7 +152,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
 
   defineColors(colors);
   const live = h('div', { 'data-penciled': '', 'data-penciled-live': '', 'aria-live': 'polite' });
-  document.body.append(live);
+  root.append(live);
   const self = {};
   uis.push(self);
   const keys = shortcuts && {
@@ -177,8 +183,8 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
   };
 
   const open = (content: Node[]) => {
-    const active = document.activeElement as HTMLElement;
-    const key = pop.contains(active) && active.dataset.penciledAction;
+    const active = focused();
+    const key = pop.contains(active) && active?.dataset.penciledAction;
     unpeek();
     card.show(content);
     if (key) focusIn(pop.querySelector<HTMLElement>(`[data-penciled-action="${CSS.escape(key)}"]`));
@@ -212,8 +218,8 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
 
   // Gives focus back if the popover holds it.
   const back = () => {
-    const active = document.activeElement as HTMLElement;
-    if (!pop.contains(active)) return;
+    const active = focused();
+    if (!active || !pop.contains(active)) return;
     if (restore?.isConnected) restore.focus({ preventScroll: true });
     else active.blur();
   };
@@ -361,7 +367,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
     if (!bar.querySelector('[data-penciled-swatch]')) bar.setAttribute('data-penciled-inline', '');
     bar.onkeydown = (e) => {
       const items = [...bar.querySelectorAll('button')];
-      const i = items.indexOf(document.activeElement as HTMLButtonElement);
+      const i = items.indexOf(focused() as HTMLButtonElement);
       const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: -1 }[e.key];
       if (to === undefined) return;
       e.preventDefault();
@@ -394,7 +400,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
 
   // Several instances can share a page: keyboard cycling goes to the one the reader is in.
   const mine = () => {
-    const active = document.activeElement;
+    const active = focused();
     const anchor = getSelection()?.anchorNode;
     const has = (n: Node | null | undefined) =>
       !!n && (instance.container.contains(n) || pop.contains(n));
@@ -439,9 +445,12 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
     touch = e.pointerType === 'touch';
   });
   if (options.notePreview === 'hover') {
-    let last: PointerEvent | undefined;
+    let last: { target: EventTarget | undefined; e: PointerEvent } | undefined;
     const check = () => {
-      const { target, clientX, clientY, buttons } = last!;
+      const {
+        target,
+        e: { clientX, clientY, buttons },
+      } = last!;
       last = undefined;
       // Not while the toolbar is open or a selection is being dragged.
       if (card.open || buttons) return unpeek();
@@ -456,7 +465,8 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
       if (e.pointerType !== 'mouse') return;
       // Hit-testing once per frame is plenty.
       if (!last) requestAnimationFrame(check);
-      last = e;
+      // The path is gone once dispatch ends; its first entry sees past shadow boundaries.
+      last = { target: e.composedPath()[0], e };
     });
     // The mouse left the window.
     listen('pointerout', (e) => {
@@ -470,7 +480,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
       commit(false);
       return dismiss();
     }
-    const el = e.target as HTMLElement;
+    const el = e.composedPath()[0] as HTMLElement;
     if (!keys || el.isContentEditable || el.closest?.('input,textarea,select')) return;
     if (keys.toolbar(e) && card.open && !editing) {
       e.preventDefault();

@@ -9,7 +9,8 @@
  * Highlight colors use light-dark(), resolved against the page's own color-scheme: highlights sit
  * on the page's background, not on penciled's UI.
  */
-:where(:root) {
+/* :host defines the properties when this sheet is loaded in a shadow root, for the `root` option. */
+:where(:root, :host) {
   /*
    * Bundlers that run Lightning CSS for older targets (Next.js, Vite) rewrite light-dark() into
    * these toggles, which only get set where a color-scheme is declared. Unset, every color here
