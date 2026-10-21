@@ -12,5 +12,11 @@ export default defineConfig({
     homepage_url: 'https://penciled.org/extension/',
     // Notes stay in this browser; unlimitedStorage lifts the 10 MB cap without an install warning.
     permissions: ['storage', 'unlimitedStorage'],
+    commands: {
+      toggle: {
+        suggested_key: { default: 'Alt+Shift+H' },
+        description: 'Hide or show highlights on this tab',
+      },
+    },
   },
 });

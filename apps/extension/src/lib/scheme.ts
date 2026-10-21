@@ -1,17 +1,13 @@
+import type { PaletteColor } from './settings.ts';
+
 /**
- * penciled's highlight colors as [light page, dark page], matching styles.css. penciled picks one
- * with light-dark(), from the page's `color-scheme`, but many sites never declare one: a dark site
- * then gets the light values, which leave too little contrast for its light text, and a site that
- * declares `light dark` but is always white gets the dark ones when the OS is dark.
+ * Highlight colors get a fixed transparency, stronger on light pages than on dark ones, so text
+ * stays readable on both. penciled would pick between them with light-dark(), from the page's
+ * `color-scheme`, but many sites never declare one: a dark site then gets the light values, which
+ * leave too little contrast for its light text. So the page's actual background decides.
  */
-const COLORS: Record<string, [string, string]> = {
-  yellow: ['#fde04780', '#facc1547'],
-  green: ['#86efac80', '#4ade803d'],
-  blue: ['#93c5fd80', '#60a5fa47'],
-  pink: ['#f9a8d480', '#f472b647'],
-  purple: ['#c4b5fd80', '#a78bfa4d'],
-  active: ['#0000001a', '#ffffff24'],
-};
+const ALPHA = ['80', '47'];
+const ACTIVE = ['#0000001a', '#ffffff24'];
 
 type RGB = [number, number, number];
 
@@ -47,18 +43,26 @@ export function isDark(): boolean {
   return luminance(background()) < 0.18;
 }
 
+/** A color's highlight value: `#rrggbbaa`. */
+export function highlight(value: string, dark: boolean): string {
+  return value + ALPHA[+dark];
+}
+
 let sheet: CSSStyleSheet | undefined;
+let palette: PaletteColor[] = [];
 
 /**
- * Sets the highlight colors by the page's actual background, in an adopted stylesheet so the
- * page's DOM is untouched. Call again whenever the page may have changed theme.
+ * Sets each color's highlight value for the page's background, in an adopted stylesheet so the
+ * page's DOM is untouched. Call again whenever the colors or the page's theme may have changed.
  */
-export function matchScheme(): void {
+export function matchScheme(colors: PaletteColor[] = palette): void {
+  palette = colors;
   if (!sheet) {
     sheet = new CSSStyleSheet();
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
   }
-  const i = isDark() ? 1 : 0;
-  const props = Object.entries(COLORS).map(([name, values]) => `--penciled-${name}:${values[i]}`);
+  const dark = isDark();
+  const props = colors.map((c) => `--penciled-${c.id}:${highlight(c.value, dark)}`);
+  props.push(`--penciled-active:${ACTIVE[+dark]}`);
   sheet.replaceSync(`:root{${props.join(';')}}`);
 }
