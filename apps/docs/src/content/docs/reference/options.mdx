@@ -105,6 +105,29 @@ With `'hover'`, a highlight's note is shown when the mouse rests on it. Clicking
 
 Where the floating cards appear relative to the text. A [`Placement`](/reference/types/#placement) is `'top'`, `'bottom'`, `'top-start'`, `'top-end'`, `'bottom-start'` or `'bottom-end'`. The toolbar's `'auto'` is above the text, or below it on touch devices. Every card flips and shifts to stay on screen.
 
+### root
+
+**Type:** `Element | ShadowRoot`<br/>
+**Default:** `document.body`
+
+Where the toolbar, the note preview and a hidden live region for screen readers are added. Pass a shadow root to keep the page's CSS away from penciled's UI, for example in a browser extension or on a page whose styles you don't control:
+
+```ts
+import { annotate } from 'penciled';
+import css from 'penciled/styles.css?inline';
+
+const host = document.createElement('div');
+document.body.append(host);
+const shadow = host.attachShadow({ mode: 'open' });
+const sheet = new CSSStyleSheet();
+sheet.replaceSync(css);
+shadow.adoptedStyleSheets = [sheet];
+
+annotate('#article', { root: shadow });
+```
+
+Highlights are painted on the page, not in the shadow root, so load `penciled/styles.css` on the page as well. penciled marks the shadow root's host with `data-penciled`, so clicks and focus inside the UI count as penciled's own. Inside a shadow root, the `--penciled-*` custom properties are defined on `:host`: set them on the host element to theme the UI.
+
 ## Interaction
 
 ### actions

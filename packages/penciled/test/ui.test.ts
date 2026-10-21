@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import '../src/styles.css';
 import { type AnnotateOptions, annotate } from '../src/index.ts';
+import css from '../src/styles.css?inline';
 import { cleanup, clickOn, find, mount, painted, selectText, track, wait } from './helpers.ts';
 
 afterEach(cleanup);
@@ -552,5 +553,88 @@ describe('styling hooks', () => {
     const preview = document.querySelector<HTMLElement>('[data-penciled-popover=preview]')!;
     expect(preview.dataset.penciledTheme).toBe('auto');
     expect(preview.querySelector('[data-penciled-note]')!.textContent).toBe('A note');
+  });
+});
+
+describe('root', () => {
+  // A page whose CSS would wreck the UI if it could reach it.
+  const HOSTILE = 'div button, div textarea { display: inline !important; padding: 0 !important }';
+
+  async function shadowed(options: AnnotateOptions = {}) {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const shadow = host.attachShadow({ mode: 'open' });
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(css);
+    shadow.adoptedStyleSheets = [sheet];
+    const ui = (key?: string) =>
+      shadow.querySelector<HTMLElement>(
+        key ? `[data-penciled-action="${key}"]` : '[data-penciled-popover=toolbar]',
+      );
+    // Keys typed inside the shadow root, as the browser dispatches them.
+    const type = (key: string, init: KeyboardEventInit = {}) =>
+      (shadow.activeElement ?? document.body).dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, composed: true, ...init }),
+      );
+    return { host, shadow, ui, type, ...(await setup({ root: shadow, ...options })) };
+  }
+
+  test('mounts the UI in a shadow root, out of reach of page CSS', async () => {
+    const style = Object.assign(document.createElement('style'), { textContent: HOSTILE });
+    document.head.append(style);
+    try {
+      const { host, shadow, ui, root, instance } = await shadowed();
+      expect(host.hasAttribute('data-penciled')).toBe(true);
+      expect(shadow.querySelector('[data-penciled-live]')).not.toBeNull();
+      await selectText(find(root, 'brown fox'));
+      expect(ui()).not.toBeNull();
+      expect(popover()).toBeNull();
+
+      // A click inside the toolbar reaches the page as a click on the host, and keeps it open.
+      const yellow = ui('color-yellow')!;
+      for (const type of ['pointerdown', 'pointerup']) {
+        yellow.dispatchEvent(new PointerEvent(type, { bubbles: true, composed: true }));
+      }
+      yellow.click();
+      expect(instance.getAll()).toMatchObject([{ quote: 'brown fox' }]);
+      expect(painted('penciled-yellow')).toEqual(['brown fox']);
+      expect(ui()!.hasAttribute('data-penciled-closing')).toBe(false);
+
+      ui('note')!.click();
+      const field = shadow.querySelector('textarea')!;
+      expect(shadow.activeElement).toBe(field);
+      expect(getComputedStyle(field).paddingLeft).toBe('8px');
+      expect(getComputedStyle(field).display).not.toBe('inline');
+    } finally {
+      style.remove();
+    }
+  });
+
+  test('keyboard: focus moves in and roves, typed shortcuts are ignored, notes save', async () => {
+    const { shadow, ui, type, root, instance } = await shadowed();
+    await selectText(find(root, 'quick'));
+    press('a', { code: 'KeyA', altKey: true });
+    expect(shadow.activeElement).toBe(ui('color-yellow'));
+    type('ArrowRight');
+    expect(shadow.activeElement).toBe(ui('color-green'));
+
+    ui('note')!.click();
+    const field = shadow.querySelector('textarea')!;
+    field.value = 'A note';
+    // Typed into the note, a cycling shortcut is text, not a command.
+    type(']', { code: 'BracketRight', altKey: true });
+    expect(shadow.activeElement).toBe(field);
+    type('Enter', { ctrlKey: true });
+    expect(instance.getAll()).toMatchObject([{ quote: 'quick', note: 'A note' }]);
+    expect(ui()!.hasAttribute('data-penciled-closing')).toBe(true);
+  });
+
+  test('Esc in the note editor cancels and gives focus back', async () => {
+    const { shadow, ui, type, root, instance } = await shadowed();
+    await selectText(find(root, 'quick'));
+    ui('note')!.click();
+    type('Escape');
+    expect(instance.getAll()).toEqual([]);
+    expect(shadow.activeElement).toBeNull();
   });
 });
