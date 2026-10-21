@@ -57,7 +57,13 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
   } = options;
   const labels = { ...LABELS, ...options.labels };
   const colors = (options.colors ?? PRESETS).map((c) => (typeof c === 'string' ? { name: c } : c));
-  const instance = engine(target, { ...options, colors: colors.map((c) => c.name) }) as Annotator;
+  // Hidden colors still paint, but new annotations default to the first one offered.
+  const offered = colors.find((c) => !c.hidden)?.name;
+  const instance = engine(target, {
+    ...(offered && { defaultColor: offered }),
+    ...options,
+    colors: colors.map((c) => c.name),
+  }) as Annotator;
   const root = options.root ?? document.body;
   // Marked so the engine treats it as UI: events from inside a shadow root are retargeted to it.
   if (root instanceof ShadowRoot) root.host.setAttribute('data-penciled', '');
@@ -340,7 +346,9 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
       // Everything else edits.
       if (!c.editable) continue;
       if (action === 'highlight') {
-        for (const { name, label = name } of colors) {
+        for (const { name, label = name, hidden } of colors) {
+          // A hidden color is still shown on an annotation that uses it.
+          if (hidden && a?.color !== name) continue;
           const swatch = h('span');
           swatch.style.setProperty('--penciled-swatch', `var(--${CSS.escape(`penciled-${name}`)})`);
           button(
@@ -411,6 +419,11 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
     ctx = next;
     commit(true);
     if (next?.annotation) cursor = next.annotation.id;
+    // The selection is kept for the toolbar shortcut to open.
+    if (next && !next.annotation && options.openOnSelect === false) {
+      editing = null;
+      return card.hide();
+    }
     render();
   });
   instance.on('update', (a) => {
@@ -482,8 +495,9 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
     }
     const el = e.composedPath()[0] as HTMLElement;
     if (!keys || el.isContentEditable || el.closest?.('input,textarea,select')) return;
-    if (keys.toolbar(e) && card.open && !editing) {
+    if (keys.toolbar(e) && ctx && !editing) {
       e.preventDefault();
+      if (!card.open) render();
       focusIn(pop.querySelector<HTMLElement>('[role=toolbar] [tabindex="0"]'));
     } else if ((keys.next(e) || keys.previous(e)) && mine()) {
       e.preventDefault();

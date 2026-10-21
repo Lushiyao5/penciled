@@ -130,8 +130,11 @@ interface Color {
   light?: string; // without it, the value comes from your CSS (--penciled-<name>)
   dark?: string; // defaults to `light`
   label?: string; // accessible name, defaults to `name`
+  hidden?: boolean; // still paints existing annotations, but isn't offered for new ones
 }
 ```
+
+To retire a color, mark it `hidden` instead of removing it. Annotations that use a color missing from `colors` are painted in the default color, while a hidden color keeps painting them in their own. The toolbar shows a hidden color only on an annotation that already uses it.
 
 ## Action
 

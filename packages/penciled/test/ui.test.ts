@@ -298,6 +298,28 @@ describe('keyboard', () => {
     expect(shown()).toBe(true);
   });
 
+  test('openOnSelect: false waits for the toolbar shortcut', async () => {
+    const { root, instance } = await setup({ openOnSelect: false });
+    await selectText(find(root, 'brown fox'));
+    expect(shown()).toBe(false);
+    press('a', { code: 'KeyA', altKey: true });
+    expect(shown()).toBe(true);
+    expect(document.activeElement).toBe(action('color-yellow'));
+    action('color-green')!.click();
+    expect(instance.getAll()).toMatchObject([{ quote: 'brown fox', color: 'green' }]);
+    // Clicking an annotation still opens it.
+    press('Escape');
+    clickOn(find(root, 'brown'));
+    expect(shown()).toBe(true);
+    // A new selection closes it again.
+    await selectText(find(root, 'lazy dog'));
+    expect(shown()).toBe(false);
+    // Without a selection, the shortcut does nothing.
+    await selectText(null);
+    press('a', { code: 'KeyA', altKey: true });
+    expect(shown()).toBe(false);
+  });
+
   test('shortcuts are configurable, or can be turned off', async () => {
     const { root, instance } = await setup({ shortcuts: { next: 'Alt+N' } });
     instance.create(find(root, 'quick'));
@@ -349,6 +371,22 @@ describe('colors and theme', () => {
     // Unknown names fall back to the default color.
     instance.create(find(root, 'lazy'), { color: 'orange' });
     expect(painted('penciled-yellow')).toEqual(['lazy']);
+  });
+
+  test('hidden colors keep painting, but are only offered on annotations using them', async () => {
+    const { root, instance } = await setup({
+      colors: [{ name: 'yellow', hidden: true }, 'green', 'blue'],
+    });
+    const old = instance.create(find(root, 'quick'), { color: 'yellow' })!;
+    expect(painted('penciled-yellow')).toEqual(['quick']);
+    await selectText(find(root, 'lazy'));
+    expect(actions()).toEqual(['color-green', 'color-blue', 'note']);
+    // New annotations default to the first color offered.
+    expect(instance.create(find(root, 'lazy'))?.color).toBe('green');
+    instance.focus(old.id);
+    expect(actions()).toEqual(['color-yellow', 'color-green', 'color-blue', 'note', 'remove']);
+    expect(action('color-yellow')?.getAttribute('aria-pressed')).toBe('true');
+    expect(instance.get(old.id)?.color).toBe('yellow');
   });
 
   test('theme and setTheme() set the UI color scheme', async () => {
