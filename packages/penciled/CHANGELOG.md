@@ -1,5 +1,19 @@
 # penciled
 
+## 0.3.0
+
+### Minor Changes
+
+- f769fc3: Re-anchoring now costs much less on large pages and pages that keep changing:
+  
+  - Indexing a page's text was quadratic in the number of text nodes in Chromium. A long Wikipedia article went from about 165 ms to 13 ms.
+  - On content that changes faster than every 100 ms (tickers, live feeds), re-anchoring was postponed indefinitely. Changes now join the pending batch, so highlights keep up.
+  - With no annotations, penciled no longer watches the page or builds its text index until text is selected.
+  - When re-anchoring is slow, it is spaced out to take about a tenth of the main thread at most, and it runs when the browser is idle.
+  - Hidden tabs re-anchor when they're shown again.
+- cf7c6f6: Selections in editable content (`contenteditable` editors) no longer open the toolbar or emit `select`. Text being edited changes under any annotation, and the toolbar got in the way of typing.
+- be5ee55: Add a `root` option that mounts the toolbar, note preview and live region somewhere other than `document.body`. Pass a shadow root to keep the page's CSS away from penciled's UI, for example in a browser extension. Keyboard shortcuts, focus handling and clicks inside the UI work across the shadow boundary.
+
 ## 0.2.1
 
 ### Patch Changes
