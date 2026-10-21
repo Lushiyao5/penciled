@@ -192,8 +192,9 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
     const sel = getSelection();
     const range = sel?.rangeCount ? sel.getRangeAt(0) : null;
     if (!range || range.collapsed) return false;
-    const spot =
-      inside(range.startContainer) && inside(range.endContainer) ? spotOf(range) : undefined;
+    const ends = [range.startContainer, range.endContainer];
+    // Text being edited changes under any annotation, and a toolbar would get in the editor's way.
+    const spot = ends.every(inside) && !ends.some(editable) ? spotOf(range) : undefined;
     select(spot && (spot.id || !readOnly) ? spot : null);
     return true;
   };
@@ -401,6 +402,10 @@ function defaultId(container: Element): string {
 function own(node: Node | null): boolean {
   const el = node && (node.nodeType === 1 ? (node as Element) : node.parentElement);
   return !!el?.closest('[data-penciled]');
+}
+
+function editable(node: Node): boolean {
+  return !!(node.nodeType === 1 ? (node as HTMLElement) : node.parentElement)?.isContentEditable;
 }
 
 function caretAt(x: number, y: number): [Node, number] | undefined {
