@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>A single-page app</title>
+  <nav><a href="/spa/foxes">Foxes</a> <a href="/spa/dogs">Dogs</a></nav>
+  <main></main>
+  <script>
+    const pages = {
+      '/spa/foxes': 'Foxes are small, omnivorous mammals with a bushy tail.',
+      '/spa/dogs': 'Dogs are domesticated descendants of the wolf.',
+    };
+    const render = () => {
+      document.querySelector('main').innerHTML = `<p>${pages[location.pathname] ?? 'Home'}</p>`;
+    };
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      history.pushState(null, '', a.href);
+      render();
+    });
+    addEventListener('popstate', render);
+    render();
+  </script>
+</html>

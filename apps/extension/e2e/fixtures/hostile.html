@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>A page with aggressive CSS</title>
+  <style>
+    /* The kind of global rules that break injected UI. */
+    *, *::before, *::after { all: unset; display: revert; }
+    button, textarea { display: none !important; }
+    div, span, p { font-size: 40px !important; color: red !important; }
+    [data-penciled-popover] { visibility: hidden !important; }
+  </style>
+  <article>
+    <p>The quick brown fox jumps over the lazy dog.</p>
+  </article>
+</html>
