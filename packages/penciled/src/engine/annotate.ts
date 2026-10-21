@@ -15,8 +15,11 @@ import { dev, emitter, normalize, now, warn } from './util.ts';
 const COLORS = ['yellow', 'green', 'blue', 'pink', 'purple'];
 /** A selection made without a pointer (keyboard, touch handles) counts once it rests this long. */
 const SETTLE = 150;
-/** Content changes are batched for this long before re-anchoring. */
+/** Content changes are batched for at least this long before re-anchoring. */
 const MUTATION_DELAY = 100;
+/** Between re-anchors, wait this many times as long as the last one took. */
+const BACKOFF = 10;
+const OBSERVE: MutationObserverInit = { childList: true, characterData: true, subtree: true };
 const EVENTS = ['create', 'update', 'delete', 'orphan', 'load', 'error', 'select'] as const;
 
 type Spot = Span & { id?: string };
@@ -82,6 +85,8 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
   let mutationTimer: ReturnType<typeof setTimeout> | undefined;
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
   let pointerDown = false;
+  // How long the last refresh took.
+  let cost = 0;
 
   // The index, rebuilt (and everything re-anchored) if the content changed since.
   const fresh = (): TextIndex => {
@@ -90,12 +95,28 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
   };
 
   const refresh = () => {
+    const t = performance.now();
     dirty = false;
     clearTimeout(mutationTimer);
+    mutationTimer = undefined;
     index = buildIndex(container);
     painted.clear();
     place([...store.values()]);
     paint();
+    cost = performance.now() - t;
+  };
+
+  // A refresh rebuilds the whole index, so on pages that change constantly (feeds, tickers) they
+  // are spaced out to take at most about a tenth of the main thread, and run when it's idle.
+  // Hidden tabs wait until they're shown.
+  // Later changes join the pending batch rather than postpone it, which on a page that changes
+  // faster than the delay would postpone it forever.
+  const schedule = () => {
+    if (mutationTimer || document.hidden) return;
+    mutationTimer = setTimeout(
+      () => idle(() => dirty && !destroyed && refresh()),
+      Math.max(MUTATION_DELAY, cost * BACKOFF),
+    );
   };
 
   const place = (list: Annotation[]) => {
@@ -170,6 +191,8 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
 
   // The innermost annotation under the viewport point (x, y).
   const hit = (x: number, y: number): Spot | undefined => {
+    // Nothing to hit, and no reason to build the index for a click.
+    if (!spans.size) return;
     const caret = caretAt(x, y);
     if (!caret) return;
     const idx = fresh();
@@ -225,6 +248,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
     }, SETTLE);
   });
   listen(window, 'pagehide', saver.flush);
+  listen(document, 'visibilitychange', () => dirty && store.size && observer && schedule());
 
   const observer = observe
     ? new MutationObserver((records) => {
@@ -235,11 +259,17 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
         );
         if (!external) return;
         dirty = true;
-        clearTimeout(mutationTimer);
-        mutationTimer = setTimeout(refresh, MUTATION_DELAY);
+        schedule();
       })
     : undefined;
-  observer?.observe(container, { childList: true, characterData: true, subtree: true });
+  // Without annotations there is nothing to re-anchor: most pages have none, and on a busy one
+  // observing alone has a cost. The index is then built on demand, when text is selected.
+  const watch = () => {
+    if (!observer) return;
+    if (store.size) return observer.observe(container, OBSERVE);
+    observer.disconnect();
+    dirty = true;
+  };
 
   const ready = (async () => {
     // After a failed load nothing is written: saving could overwrite what couldn't be read.
@@ -255,7 +285,8 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
       error(e);
     }
     if (destroyed) return;
-    refresh();
+    if (store.size) refresh();
+    watch();
     if (loaded) saver.start();
     events.emit('load', getAll());
   })();
@@ -269,6 +300,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
     orphans.delete(id);
     if (current?.id === id) select(null);
     paint();
+    watch();
     events.emit('delete', { ...a });
     saver.queue('delete', id);
   };
@@ -289,6 +321,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
       store.set(a.id, a);
       spans.set(a.id, { start: spot.start, end: spot.end, id: a.id });
       paint();
+      watch();
       events.emit('create', { ...a });
       saver.queue('create', a.id);
       // The selected text became this annotation.
@@ -360,6 +393,7 @@ export function annotate(target: Element | string, options: AnnotateOptions = {}
       for (const a of incoming) store.set(a.id, a);
       place(incoming);
       paint();
+      watch();
       for (const a of incoming) {
         const op = existed.has(a.id) ? 'update' : 'create';
         events.emit(op, { ...a });
@@ -401,6 +435,12 @@ function defaultId(container: Element): string {
 function own(node: Node | null): boolean {
   const el = node && (node.nodeType === 1 ? (node as Element) : node.parentElement);
   return !!el?.closest('[data-penciled]');
+}
+
+// Runs `fn` when the main thread is idle, or right away where that can't be known (Safari).
+function idle(fn: () => void): void {
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(fn, { timeout: 1000 });
+  else fn();
 }
 
 function caretAt(x: number, y: number): [Node, number] | undefined {

@@ -51,7 +51,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc",
     "size": "size-limit",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bench": "node bench/pages.ts"
   },
   "peerDependencies": {
     "react": ">=18"

@@ -115,3 +115,19 @@ test('creating or focusing one annotation only touches the ranges that changed',
   expect(CSS.highlights.get('penciled-yellow')).toBe(yellow);
   expect(time(() => instance.focus(instance.getAll()[250]!.id))).toBeLessThan(BUDGET / 10);
 });
+
+test('indexes a page made of many small text nodes quickly', async () => {
+  // Like a large wiki page or a code diff: 60,000 short nodes, each in its own element.
+  const root = document.createElement('div');
+  for (let i = 0; i < 6000; i++) {
+    const p = document.createElement('p');
+    for (let j = 0; j < 10; j++) {
+      p.append(Object.assign(document.createElement('span'), { textContent: ` word ${j} ` }));
+    }
+    root.append(p);
+  }
+  document.body.append(root);
+  const instance = track(annotate(root, { documentId: 'nodes', storage: 'memory' }));
+  await instance.ready;
+  expect(time(() => instance.refresh())).toBeLessThan(BUDGET);
+});

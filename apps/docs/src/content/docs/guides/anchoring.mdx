@@ -52,7 +52,14 @@ Highlighting the wrong passage would be worse than highlighting nothing: a note 
 
 ## Dynamic content
 
-By default penciled watches the container with a `MutationObserver`. When its content changes, it waits for the changes to settle (100 ms) and re-anchors every annotation. Its own UI is ignored, so this never loops. Content loaded after `annotate()` runs, such as comments fetched later or a page hydrated by a framework, is picked up automatically. Annotations whose text hasn't arrived yet are orphaned until it does, so the `orphan` event can fire for them before they anchor.
+By default penciled watches the container with a `MutationObserver`. When its content changes, it collects changes for 100 ms and then re-anchors every annotation. Its own UI is ignored, so this never loops.
+
+Re-anchoring is kept cheap on pages that never stop changing, like feeds, tickers and live scores:
+
+- It only runs while there are annotations. With none, penciled doesn't watch the page at all, and reads its text when something is selected.
+- Changes that keep arriving join the pending batch rather than postponing it, so annotations keep up with a page that changes every few milliseconds.
+- When re-anchoring is slow, the next one waits ten times as long as the last one took, so it takes about a tenth of the main thread at most. It runs when the browser is idle, where the browser supports that.
+- In a hidden tab it waits until the tab is shown again. Content loaded after `annotate()` runs, such as comments fetched later or a page hydrated by a framework, is picked up automatically. Annotations whose text hasn't arrived yet are orphaned until it does, so the `orphan` event can fire for them before they anchor.
 
 For very large or constantly changing containers, turn the observer off and re-anchor yourself when you know the content changed:
 

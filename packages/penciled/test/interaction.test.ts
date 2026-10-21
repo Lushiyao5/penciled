@@ -330,6 +330,75 @@ describe('re-anchoring on content changes', () => {
     expect(painted('penciled-yellow')).toEqual(['later section']);
   });
 
+  test('pages without annotations build no index until text is selected', async () => {
+    const { root, instance, last } = await setup();
+    const brown = find(root, 'brown');
+    const walk = vi.spyOn(document, 'createTreeWalker');
+    root.append(Object.assign(document.createElement('p'), { textContent: 'More.' }));
+    await wait(200);
+    clickOn(brown);
+    expect(walk).not.toHaveBeenCalled();
+    await selectText(brown);
+    expect(last()?.text).toBe('brown');
+    expect(walk).toHaveBeenCalledTimes(1);
+    // The first annotation wakes the observer up.
+    const a = instance.create(brown)!;
+    root.prepend(Object.assign(document.createElement('p'), { textContent: 'Intro. ' }));
+    await wait(200);
+    expect(painted('penciled-yellow')).toEqual(['brown']);
+    expect(instance.getRange(a.id)?.toString()).toBe('brown');
+  });
+
+  test('keeps up with content that never stops changing', async () => {
+    const { root, instance } = await setup({}, `<p>Price: 0</p>${TEXT}`);
+    instance.create(find(root, 'lazy dog'));
+    const ranges = () => [...CSS.highlights.get('penciled-yellow')!];
+    const [before] = ranges();
+    // A ticker that changes faster than re-anchoring is batched.
+    const price = root.querySelector('p')!.firstChild as Text;
+    const ticker = setInterval(() => {
+      price.data = `Price: ${Math.random()}`;
+    }, 30);
+    await wait(400);
+    clearInterval(ticker);
+    expect(ranges()[0]).not.toBe(before);
+    expect(painted('penciled-yellow')).toEqual(['lazy dog']);
+  });
+
+  test('hidden tabs re-anchor once they are shown again', async () => {
+    const { root, instance } = await setup();
+    instance.create(find(root, 'lazy dog'));
+    const ranges = () => [...CSS.highlights.get('penciled-yellow')!];
+    const [before] = ranges();
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    root.prepend(Object.assign(document.createElement('p'), { textContent: 'Intro. ' }));
+    await wait(200);
+    // A refresh would have repainted with new Range objects.
+    expect(ranges()[0]).toBe(before);
+    hidden.mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await wait(200);
+    expect(ranges()[0]).not.toBe(before);
+    expect(painted('penciled-yellow')).toEqual(['lazy dog']);
+  });
+
+  test('slow refreshes are spaced further apart', async () => {
+    const { root, instance } = await setup();
+    instance.create(find(root, 'lazy dog'));
+    // Every refresh appears to take 50ms, so the next waits 500ms.
+    let t = 0;
+    const now = vi.spyOn(performance, 'now').mockImplementation(() => (t += 25));
+    instance.refresh();
+    now.mockRestore();
+    const ranges = () => [...CSS.highlights.get('penciled-yellow')!];
+    const [before] = ranges();
+    root.prepend(Object.assign(document.createElement('p'), { textContent: 'Intro. ' }));
+    await wait(250);
+    expect(ranges()[0]).toBe(before);
+    await wait(500);
+    expect(ranges()[0]).not.toBe(before);
+  });
+
   test('with observe: false, changes apply on refresh()', async () => {
     const { root, instance } = await setup({ observe: false });
     const a = instance.create(find(root, 'lazy dog'))!;

@@ -21,6 +21,9 @@ export function buildIndex(root: Node): TextIndex {
   const starts: number[] = [];
   const position = new Map<Node, number>();
   let text = '';
+  // Whether `text` ends in a space, tracked because reading it off a string built with += copies
+  // the whole string each time: quadratic on pages with many text nodes.
+  let ws = true;
   const walker = document.createTreeWalker(root, 5 /* SHOW_ELEMENT | SHOW_TEXT */, {
     acceptNode: (n) =>
       n.nodeType === 1 && (SKIP.test(n.nodeName) || (n as Element).hasAttribute('data-penciled'))
@@ -30,7 +33,8 @@ export function buildIndex(root: Node): TextIndex {
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     if (n.nodeType !== 3) continue;
     let s = (n as Text).data.replace(RUNS, ' ');
-    if (s[0] === ' ' && (!text || text.endsWith(' '))) s = s.slice(1);
+    if (s[0] === ' ' && ws) s = s.slice(1);
+    if (s) ws = s.endsWith(' ');
     position.set(n, nodes.length);
     nodes.push(n as Text);
     starts.push(text.length);
