@@ -17,3 +17,7 @@ __screenshots__/
 .claude/
 .cursor/
 .codex/
+
+# WXT
+.wxt/
+.output/

@@ -63,6 +63,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["apps/extension/e2e/fixtures/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
+          }
+        }
+      }
     }
   ]
 }
