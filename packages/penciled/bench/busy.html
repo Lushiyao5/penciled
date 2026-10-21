@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Busy page</title>
+<!-- A long article beside a ticker and a feed that never stop changing: `pnpm bench bench/busy.html`. -->
+<p id="ticker"></p>
+<ul id="feed"></ul>
+<article id="article"></article>
+<script>
+  const words = 'the of and a to in is was he for it with as his on be at by this had not are but'.split(' ');
+  let seed = 1;
+  const rand = (n) => {
+    seed = (seed * 16807) % 2147483647;
+    return seed % n;
+  };
+  for (let i = 0; i < 400; i++) {
+    const p = document.createElement('p');
+    p.textContent = `${Array.from({ length: 120 }, () => words[rand(words.length)]).join(' ')}.`;
+    article.append(p);
+  }
+  setInterval(() => (ticker.textContent = `Price: ${(Math.random() * 1000).toFixed(2)}`), 50);
+  setInterval(() => {
+    const li = document.createElement('li');
+    li.textContent = `Update at ${new Date().toISOString()}`;
+    feed.prepend(li);
+    feed.lastElementChild?.remove();
+  }, 500);
+</script>

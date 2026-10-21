@@ -19,7 +19,8 @@
     "format": "biome check --write .",
     "size": "pnpm --filter penciled size",
     "changeset": "changeset",
-    "release": "pnpm build && changeset publish"
+    "release": "pnpm build && changeset publish",
+    "bench": "pnpm --filter penciled bench"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
