@@ -1,0 +1,48 @@
+# Store listings
+
+What to fill in on the [Chrome Web Store](https://chrome.google.com/webstore/devconsole) and [Edge Add-ons](https://partner.microsoft.com/dashboard/microsoftedge/) dashboards. Upload `penciled-<version>-chrome.zip` and `penciled-<version>-edge.zip` from the [extension release](https://github.com/marcellosso/penciled/releases?q=extension&expanded=true).
+
+Screenshots are in `screenshots/` (1280×800). Regenerate them with `pnpm --filter extension screenshots`. The store icon is `public/icon/128.png`; regenerate the icons with `pnpm --filter extension icons`.
+
+## Listing
+
+- **Name:** penciled – Highlighter & Notes for any web page (from the manifest)
+- **Summary:** Highlight text and take notes on any website. Your highlights come back when you return. Nothing leaves your browser. (from the manifest, under 132 characters)
+- **Category:** Productivity → Tools (Chrome) · Productivity (Edge)
+- **Language:** English
+- **Homepage:** https://penciled.org/extension/
+- **Support:** https://github.com/marcellosso/penciled/issues
+- **Privacy policy:** https://penciled.org/extension/privacy/
+
+## Description
+
+```
+Highlight text and take notes on any website, like reading with a pencil in hand. Your highlights come back every time you return to the page.
+
+• Select text and pick a color to highlight it. Add a note to remember why.
+• Click penciled's toolbar button to see the page's highlights, and jump to any of them.
+• The notes page lists every highlight from every site, with search.
+• Export your notes as a backup or as Markdown, and import them in another browser.
+• Make it yours: your own colors, a light or dark toolbar, or a toolbar that only opens when you press Alt+A.
+• Hide highlights on a tab with Alt+Shift+H, or turn penciled off for a whole site.
+• Looks right on dark websites too.
+
+Private by design
+penciled has no account, no servers and no analytics. It makes no network requests: your highlights are saved in your browser and never leave it. It's open source, so you can check: https://github.com/marcellosso/penciled
+
+Highlights never change the page itself. They're drawn by the browser, so pages keep working exactly as before. If a page changes so much that penciled can't be sure where a highlight belongs, it doesn't guess: it lists the highlight as not found, so you can still read or delete it.
+
+Not supported yet: text inside frames (such as embedded posts), PDFs, and text fields. Highlights don't sync between computers; use export and import to move them.
+
+Built on penciled, the open-source text annotation library: https://penciled.org
+```
+
+## Privacy practices (Chrome)
+
+- **Single purpose:** Lets the reader highlight text and write notes on web pages, and find them again later.
+- **Permission justifications:**
+  - `storage`: saves the reader's highlights, notes and settings in the browser.
+  - `unlimitedStorage`: readers who highlight a lot can exceed the 10 MB default; highlights are never deleted to make room.
+  - Host permission (`<all_urls>`, through the content script): the reader can highlight on any website, so the content script runs on every page to show their highlights and the toolbar.
+- **Remote code:** No, it doesn't use remote code.
+- **Data usage:** none of the listed types of data is collected. Website content (the highlighted text, with a little of the text around it, and the page's address and title) is stored locally only and is never transmitted, so it isn't "collected" in the store's sense. Certify all three statements: not sold, not used for unrelated purposes, not used for credit.

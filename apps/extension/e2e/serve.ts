@@ -1,10 +1,10 @@
-// Serves e2e/fixtures on http://localhost:$PORT, since content scripts don't run on file: URLs
+// Serves e2e/fixtures (or $ROOT) on http://localhost:$PORT, since content scripts don't run on file: URLs
 // unless the user allows it.
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join } from 'node:path';
 
-const root = join(import.meta.dirname, 'fixtures');
+const root = process.env.ROOT ?? join(import.meta.dirname, 'fixtures');
 const types: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
