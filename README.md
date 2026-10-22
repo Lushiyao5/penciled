@@ -1,6 +1,6 @@
-# penciled
+# penciled.js
 
-Beautiful, persistent text highlights and notes for any webpage. Think **Sonner, for text annotations**.
+penciled is a 15 kB open-source JavaScript library for persistent highlights and notes on any web page. Think **Sonner, for text annotations**.
 
 [Documentation](https://penciled.org) · [Playground](https://penciled.org/playground/) · [npm](https://www.npmjs.com/package/penciled) · [Browser extension](https://penciled.org/extension/)
 

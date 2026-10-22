@@ -137,6 +137,13 @@ code {
   font-optical-sizing: auto;
   letter-spacing: -0.025em;
 }
+.intro h1 .name {
+  display: block;
+  margin-bottom: 0.875rem;
+  color: var(--pd-muted);
+  font: 500 0.8125rem / 1.4 var(--pd-sans);
+  letter-spacing: 0;
+}
 .facts {
   max-width: 30rem;
   margin: 1rem 0 2rem;

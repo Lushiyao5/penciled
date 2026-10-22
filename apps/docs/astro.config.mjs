@@ -1,9 +1,12 @@
 import starlight from '@astrojs/starlight';
 import { defineConfig } from 'astro/config';
+import starlightLlmsTxt from 'starlight-llms-txt';
 import { graphiteDark, graphiteLight } from './src/code-themes.mjs';
 
 // The public URL, for canonical links, Open Graph and the sitemap. Set SITE_URL to override it.
-const site = process.env.SITE_URL ?? 'https://penciled.org';
+// It must be the primary domain on Vercel: the apex redirects to www, and a canonical URL that
+// redirects is ignored by search engines.
+const site = process.env.SITE_URL ?? 'https://www.penciled.org';
 const ogImage = new URL('/og.png', site).href;
 
 export default defineConfig({
@@ -12,8 +15,26 @@ export default defineConfig({
     starlight({
       title: 'penciled',
       description:
-        'A tiny, framework-agnostic JavaScript library for persistent text highlights and notes on any webpage.',
+        'penciled.js is a 15 kB open-source JavaScript library for persistent highlights and notes on any web page.',
       favicon: '/favicon.svg',
+      plugins: [
+        starlightLlmsTxt({
+          projectName: 'penciled.js',
+          description:
+            'penciled is a 15 kB open-source JavaScript library for persistent highlights and notes on any web page. It is published on npm as `penciled`.',
+          details: [
+            "- `annotate('#article')` adds a floating toolbar and a note editor, and saves annotations to `localStorage` or a custom storage adapter.",
+            '- Highlights are painted with the CSS Custom Highlight API, so the host DOM is never modified.',
+            '- Entry points: `penciled` (with the default UI), `penciled/headless` (the engine only), `penciled/react` and `penciled/styles.css`.',
+            '- It is a text annotation library, not a website review tool: no screenshots, drawing, threaded discussions, accounts or sync backend.',
+            '- Not to be confused with Penciled, the healthcare company at penciled.com.',
+          ].join('\n'),
+          optionalLinks: [
+            { label: 'GitHub', url: 'https://github.com/marcellosso/penciled' },
+            { label: 'npm', url: 'https://www.npmjs.com/package/penciled' },
+          ],
+        }),
+      ],
       components: { Head: './src/components/Head.astro' },
       head: [
         { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
