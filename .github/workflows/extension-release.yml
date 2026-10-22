@@ -1,7 +1,8 @@
 name: Extension release
 
-# Push a tag like `extension-v0.1.0` to build the Chrome and Edge packages and attach them to a
-# GitHub release. Uploading them to the stores is done by hand.
+# Push a tag like `extension-v0.1.0` to build the Chrome, Edge and Firefox packages, plus the
+# sources zip Firefox Add-ons asks for, and attach them to a GitHub release. Uploading them to the
+# stores is done by hand.
 on:
   push:
     tags: ['extension-v*']
@@ -29,6 +30,7 @@ jobs:
           fi
       - run: pnpm --filter penciled build
       - run: pnpm --filter extension test
+      - run: pnpm --filter extension lint:firefox
       - run: pnpm --filter extension zip
       - name: Create the GitHub release
         env:

@@ -156,8 +156,13 @@ export async function settingsView(): Promise<Node[]> {
   // Shortcuts
   const toggle = commands.find((c) => c.name === 'toggle')?.shortcut;
   const shortcuts = h('button', { type: 'button' }, 'Change shortcuts');
-  // Extension pages can't link to the browser's own pages, but can open them.
-  shortcuts.onclick = () => browser.tabs.create({ url: 'chrome://extensions/shortcuts' });
+  // Firefox has its own call for this. Elsewhere, extension pages can't link to the browser's
+  // own pages, but can open them.
+  const commandsApi = browser.commands as { openShortcutSettings?: () => Promise<void> };
+  shortcuts.onclick = () =>
+    commandsApi.openShortcutSettings
+      ? commandsApi.openShortcutSettings()
+      : browser.tabs.create({ url: 'chrome://extensions/shortcuts' });
 
   return [
     h(

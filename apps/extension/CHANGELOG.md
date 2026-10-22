@@ -1,5 +1,10 @@
 # penciled for the browser
 
+## 0.2.0
+
+- penciled now works in Firefox 140 or later, and in Firefox-based browsers such as Zen, Floorp and LibreWolf.
+- In Firefox, **Change shortcuts** on the settings page opens Firefox's shortcut settings.
+
 ## 0.1.0
 
 The first release.
