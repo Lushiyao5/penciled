@@ -30,16 +30,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
       # changesets/action only tags and creates GitHub releases when it recognizes the publish
-      # output, which @changesets/cli 3 changed, so it's done here. With no changesets pending,
-      # the step above published the current version (or found it already published).
+      # output, which @changesets/cli 3 changed, so it's done here. The version and pending
+      # changesets are read from the pushed commit: when changesets are pending, the step above
+      # has already bumped the working copy for the Version Packages PR. With none pending, it
+      # published the commit's version (or found it already published).
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          version=$(node -p "require('./packages/penciled/package.json').version")
+          if git ls-tree --name-only "$GITHUB_SHA" .changeset/ | grep '\.md$' | grep -qv README.md; then
+            exit 0
+          fi
+          version=$(git show "$GITHUB_SHA:packages/penciled/package.json" | node -p "JSON.parse(require('fs').readFileSync(0)).version")
           tag="penciled@$version"
           if gh release view "$tag" >/dev/null 2>&1; then exit 0; fi
-          if ls .changeset/*.md | grep -qv README.md; then exit 0; fi
-          awk -v v="## $version" '$0 == v { f = 1; next } /^## / { f = 0 } f' \
-            packages/penciled/CHANGELOG.md > notes.md
+          git show "$GITHUB_SHA:packages/penciled/CHANGELOG.md" |
+            awk -v v="## $version" '$0 == v { f = 1; next } /^## / { f = 0 } f' > notes.md
           gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md
