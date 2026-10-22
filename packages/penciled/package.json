@@ -1,6 +1,6 @@
 {
   "name": "penciled",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "penciled.js: a 15 kB open-source JavaScript library for persistent text highlights and notes on any web page.",
   "license": "MIT",
   "author": "Marcel Losso",
