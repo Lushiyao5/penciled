@@ -3,6 +3,7 @@ import { h } from '../../lib/dom.ts';
 import { colorUsage, recolor } from '../../lib/pages.ts';
 import { highlight } from '../../lib/scheme.ts';
 import {
+  type ButtonOpens,
   getSettings,
   MAX_COLORS,
   nextColorId,
@@ -10,6 +11,7 @@ import {
   saveSettings,
   type Theme,
 } from '../../lib/settings.ts';
+import { hasSidebar } from '../../lib/sidebar.ts';
 import { disabledSites, setSiteEnabled } from '../../lib/sites.ts';
 
 const dark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -68,6 +70,27 @@ export async function settingsView(): Promise<Node[]> {
   // Toolbar
   const openOnSelect = h('input', { type: 'checkbox', checked: settings.openOnSelect });
   openOnSelect.onchange = () => saveSettings({ openOnSelect: openOnSelect.checked });
+
+  // Toolbar button
+  const button = h(
+    'div',
+    { role: 'radiogroup', 'aria-label': 'The penciled button opens', class: 'choices' },
+    ...(
+      [
+        ['popup', 'This page’s highlights'],
+        ['sidebar', 'The sidebar'],
+      ] as [ButtonOpens, string][]
+    ).map(([value, label]) => {
+      const input = h('input', {
+        type: 'radio',
+        name: 'button',
+        value,
+        checked: settings.buttonOpens === value,
+      });
+      input.onchange = () => saveSettings({ buttonOpens: value });
+      return h('label', {}, input, label);
+    }),
+  );
 
   // Colors
   const swatch = (c: PaletteColor) => {
@@ -154,7 +177,7 @@ export async function settingsView(): Promise<Node[]> {
   };
 
   // Shortcuts
-  const toggle = commands.find((c) => c.name === 'toggle')?.shortcut;
+  const shortcut = (name: string) => commands.find((c) => c.name === name)?.shortcut || 'Not set';
   const shortcuts = h('button', { type: 'button' }, 'Change shortcuts');
   // Firefox has its own call for this. Elsewhere, extension pages can't link to the browser's
   // own pages, but can open them.
@@ -180,6 +203,19 @@ export async function settingsView(): Promise<Node[]> {
         `When this is off, select text and press ${key('A')} to highlight it. Clicking a highlight always opens it.`,
       ),
     ),
+    ...(hasSidebar()
+      ? [
+          section(
+            'The penciled button',
+            h(
+              'p',
+              { class: 'hint' },
+              'What opens when you click penciled in the browser’s toolbar.',
+            ),
+            button,
+          ),
+        ]
+      : []),
     section(
       'Colors',
       h('p', { class: 'hint' }, 'Changing a color changes the highlights that use it.'),
@@ -214,7 +250,9 @@ export async function settingsView(): Promise<Node[]> {
         'dl',
         {},
         h('dt', {}, 'Hide or show highlights on a tab'),
-        h('dd', {}, toggle || 'Not set'),
+        h('dd', {}, shortcut('toggle')),
+        hasSidebar() && h('dt', {}, 'Open or close the sidebar'),
+        hasSidebar() && h('dd', {}, shortcut('sidebar')),
         h('dt', {}, 'Open the toolbar for the selected text'),
         h('dd', {}, key('A')),
         h('dt', {}, 'Go to the next or previous highlight'),

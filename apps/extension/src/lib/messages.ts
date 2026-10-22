@@ -1,29 +1,34 @@
 import { browser } from 'wxt/browser';
 import type { PaletteColor } from './settings.ts';
 
-/** What the popup asks a tab's content script. */
+/** What the popup and the sidebar ask a tab's content script. */
 export type Request =
   | { type: 'state' }
   | { type: 'focus'; id: string }
   | { type: 'remove'; id: string }
+  | { type: 'tags'; id: string; tags: string[] }
   /** Turns penciled on or off for the tab's whole site. */
   | { type: 'site'; enabled: boolean }
   /** From the keyboard shortcut: hides or shows penciled on this tab. */
   | { type: 'toggle' };
 
-/** An annotation as the popup lists it. */
+/** An annotation as the popup and the sidebar list it. */
 export interface Item {
   id: string;
   quote: string;
   note?: string;
   color: string;
+  tags: string[];
   /** Its text couldn't be found on the page, so it isn't painted. */
   orphan: boolean;
 }
 
-/** A tab's penciled, as the popup shows it. */
+/** A tab's penciled, as the popup and the sidebar show it. */
 export interface PageState {
   site: string;
+  /** The id the page's annotations are stored under. */
+  page: string;
+  title: string;
   /** Turned off for the whole site. */
   disabled: boolean;
   /** Hidden on this tab with the keyboard shortcut. */

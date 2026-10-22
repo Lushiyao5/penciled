@@ -61,6 +61,10 @@ export default defineConfig({
         suggested_key: { default: 'Alt+Shift+H' },
         description: 'Hide or show highlights on this tab',
       },
+      sidebar: {
+        suggested_key: { default: 'Alt+Shift+N' },
+        description: 'Open or close the notes sidebar',
+      },
     },
   }),
 });

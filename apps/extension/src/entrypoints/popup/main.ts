@@ -1,8 +1,9 @@
 import '../../assets/ui.css';
 import { browser } from 'wxt/browser';
-import { h } from '../../lib/dom.ts';
+import { h, ICONS } from '../../lib/dom.ts';
 import { ask, type Item, type PageState } from '../../lib/messages.ts';
 import { highlight } from '../../lib/scheme.ts';
+import { hasSidebar, openSidebar } from '../../lib/sidebar.ts';
 
 const app = document.getElementById('app')!;
 const dark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -26,16 +27,41 @@ const openPage = (view: string) => {
   window.close();
 };
 
+// The window to open the sidebar in. Found before it's clicked, since the sidebar has to open
+// straight away.
+let windowId: number | undefined;
+browser.windows.getCurrent().then((w) => {
+  windowId = w.id;
+});
+
 const links = () => {
   const notes = h('button', { type: 'button', class: 'link' }, 'All notes');
   notes.onclick = () => openPage('notes');
+  const sidebar =
+    hasSidebar() &&
+    h(
+      'button',
+      {
+        type: 'button',
+        class: 'icon',
+        'aria-label': 'Open the sidebar',
+        title: 'Open the sidebar',
+      },
+      ICONS.sidebar(),
+    );
+  if (sidebar) {
+    sidebar.onclick = () => {
+      if (windowId !== undefined) openSidebar(windowId).catch(() => {});
+      window.close();
+    };
+  }
   const settings = h(
     'button',
     { type: 'button', class: 'icon', 'aria-label': 'Settings', title: 'Settings' },
-    '⚙',
+    ICONS.settings(),
   );
   settings.onclick = () => openPage('settings');
-  return h('span', { class: 'links' }, notes, settings);
+  return h('span', { class: 'links' }, notes, sidebar, settings);
 };
 
 function render(tab: number, state: PageState, keys: string) {

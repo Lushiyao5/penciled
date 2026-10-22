@@ -1,5 +1,11 @@
 # penciled for the browser
 
+## 0.3.0
+
+- A sidebar keeps your highlights beside the page as you read. **This page** follows the tab you're on; **All pages** lists and searches highlights from every site. Open it from the new button in penciled's menu, or press Alt+Shift+N to open or close it.
+- A new setting makes penciled's toolbar button open the sidebar instead of the menu.
+- Tag your highlights in the sidebar, with suggestions from the tags you already use. Click a tag to show only highlights with it, or search for `#tag` in the sidebar or on the notes page. Markdown exports include tags.
+
 ## 0.2.1
 
 - Fixes penciled not starting on any page in Firefox and Firefox-based browsers.

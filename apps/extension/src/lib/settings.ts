@@ -12,12 +12,17 @@ export interface PaletteColor {
 
 export type Theme = 'auto' | 'light' | 'dark';
 
+/** What clicking penciled's button in the browser's toolbar opens. */
+export type ButtonOpens = 'popup' | 'sidebar';
+
 export interface Settings {
   /** The toolbar's theme. `auto` follows the operating system. */
   theme: Theme;
   /** Whether selecting text opens the toolbar. When off, the toolbar shortcut opens it. */
   openOnSelect: boolean;
   colors: PaletteColor[];
+  /** Ignored in browsers without a sidebar, where the button always opens the popup. */
+  buttonOpens: ButtonOpens;
 }
 
 /** More colors don't fit on one row of the toolbar. */
@@ -27,6 +32,7 @@ export const MAX_COLORS = 8;
 export const DEFAULTS: Settings = {
   theme: 'auto',
   openOnSelect: true,
+  buttonOpens: 'popup',
   colors: [
     { id: 'c1', label: 'Yellow', value: '#fde047' },
     { id: 'c2', label: 'Green', value: '#86efac' },

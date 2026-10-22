@@ -10,6 +10,7 @@ import { matchScheme } from '../lib/scheme.ts';
 import { getSettings, onSettings, type Settings } from '../lib/settings.ts';
 import { disabledSites, onDisabledSites, setSiteEnabled, siteOf } from '../lib/sites.ts';
 import { extensionStorage, type PageData, pageKey } from '../lib/storage.ts';
+import { tagsOf, withTags } from '../lib/tags.ts';
 import { pageId } from '../lib/url.ts';
 
 export default defineContentScript({
@@ -102,6 +103,8 @@ export default defineContentScript({
 
     const state = (): PageState => ({
       site: site(),
+      page: pageId(url),
+      title: document.title,
       disabled: disabled.includes(site()),
       hidden,
       colors: settings.colors,
@@ -111,17 +114,26 @@ export default defineContentScript({
           quote: a.quote,
           ...(a.note && { note: a.note }),
           color: a.color,
+          tags: tagsOf(a),
           orphan: !instance!.getRange(a.id),
         }))
         // In page order, then the ones that couldn't be found.
         .sort((a, b) => +a.orphan - +b.orphan),
     });
 
+    // Tells the sidebar, which lists this tab's highlights, about changes it can't see in storage.
+    const changed = () => browser.runtime.sendMessage({ type: 'changed' }).catch(() => {});
+
     const handle = async (message: Request) => {
-      if (message.type === 'toggle') hidden = !hidden;
-      else if (message.type === 'focus') instance?.focus(message.id);
+      if (message.type === 'toggle') {
+        hidden = !hidden;
+        changed();
+      } else if (message.type === 'focus') instance?.focus(message.id);
       else if (message.type === 'remove') instance?.remove(message.id);
-      else if (message.type === 'site') {
+      else if (message.type === 'tags') {
+        const a = instance?.get(message.id);
+        if (a) instance!.update(a.id, { meta: withTags(a.meta, message.tags) });
+      } else if (message.type === 'site') {
         // Applied here right away; other tabs on the site follow through storage.
         disabled = disabled.filter((s) => s !== site());
         if (!message.enabled) disabled.push(site());
@@ -145,16 +157,16 @@ export default defineContentScript({
     ctx.addEventListener(window, 'wxt:locationchange', (e) => {
       url = e.newUrl.href;
       start();
+      changed();
     });
     browser.storage.local.onChanged.addListener(sync);
     const unwatch = [
       () => browser.storage.local.onChanged.removeListener(sync),
       onSettings((next, previous) => {
         settings = next;
-        // The theme applies live; anything else rebuilds the toolbar.
-        const { theme: _, ...rest } = next;
-        const { theme: __, ...was } = previous;
-        if (JSON.stringify(rest) === JSON.stringify(was)) return instance?.setTheme(next.theme);
+        // The theme applies live; the colors or how the toolbar opens rebuild it.
+        const toolbar = (s: Settings) => JSON.stringify([s.openOnSelect, s.colors]);
+        if (toolbar(next) === toolbar(previous)) return instance?.setTheme(next.theme);
         stop();
         start();
       }),
