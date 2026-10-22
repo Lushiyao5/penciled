@@ -1,4 +1,4 @@
-/* The popup and the settings page. */
+/* The popup, the sidebar and the settings page. */
 :root {
   color-scheme: light dark;
   --bg: light-dark(#fff, #18181b);
@@ -9,6 +9,9 @@
   --accent: light-dark(#18181b, #fafafa);
   --accent-fg: light-dark(#fff, #18181b);
   --ring: light-dark(#2563eb, #60a5fa);
+  --raised: light-dark(#fff, #3f3f46);
+  --danger: light-dark(#dc2626, #f87171);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
   color: var(--fg);
   background: var(--bg);
 }
@@ -50,9 +53,18 @@ button.link {
   text-decoration: underline;
 }
 button.icon {
-  padding: 2px 8px;
+  display: inline-grid;
+  place-items: center;
+  padding: 6px;
   border: 0;
-  font-size: 16px;
+  border-radius: 8px;
+  color: var(--muted);
+  transition:
+    color 0.15s,
+    background-color 0.15s;
+}
+button.icon:hover:not(:disabled) {
+  color: var(--fg);
 }
 :focus-visible {
   outline: 2px solid var(--ring);
@@ -306,4 +318,296 @@ input[type="search"] {
   display: flex;
   flex: none;
   align-items: center;
+}
+
+/* Sidebar */
+[data-page="sidebar"] {
+  min-width: 0;
+}
+[data-page="sidebar"] .top {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid transparent;
+  background: var(--bg);
+  transition: border-color 0.2s;
+}
+[data-page="sidebar"][data-scrolled] .top {
+  border-bottom-color: var(--border);
+}
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.segmented {
+  position: relative;
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--hover);
+}
+/* The selected tab's background, which slides between them. */
+.segmented::before {
+  content: "";
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  width: calc(50% - 2px);
+  border-radius: 7px;
+  background: var(--raised);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 0 0 1px var(--border);
+  transition: transform 0.25s var(--ease);
+}
+[data-view="all"] .segmented::before {
+  transform: translateX(100%);
+}
+.segmented button {
+  position: relative;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+.segmented button:hover:not(:disabled) {
+  background: none;
+  color: var(--fg);
+}
+.segmented button[aria-selected="true"] {
+  color: var(--fg);
+}
+.search {
+  position: relative;
+  display: block;
+  color: var(--muted);
+}
+.search svg {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+[data-page="sidebar"] input[type="search"] {
+  padding: 6px 10px 6px 30px;
+  border-color: transparent;
+  background: var(--hover);
+  color: var(--fg);
+  font-size: 13px;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+[data-page="sidebar"] input[type="search"]:focus {
+  border-color: var(--border);
+  background: var(--bg);
+}
+[data-page="sidebar"] input[type="search"]:focus-visible {
+  outline-offset: 0;
+}
+[data-page="sidebar"] input[type="search"]::placeholder {
+  color: var(--muted);
+}
+.list {
+  padding-bottom: 16px;
+}
+.page-head,
+.group-head {
+  display: grid;
+  gap: 1px;
+  padding: 6px 18px 6px;
+}
+.page-head p,
+.group-head p {
+  margin: 0;
+}
+.page-head .title,
+.group-head .title {
+  overflow: hidden;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.group-head .title {
+  font-size: 13px;
+}
+.group-head .title:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.page-head .meta,
+.group-head .meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.badge {
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--hover);
+  color: var(--fg);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+}
+/* Not the settings page's sections. */
+.list .group {
+  margin: 0;
+  padding: 8px 0 0;
+  border: 0;
+}
+.list .group + .group {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.cards {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0 8px;
+  list-style: none;
+}
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  transition: background-color 0.15s;
+}
+.card:hover,
+.card:focus-within {
+  background: var(--hover);
+}
+.card .open {
+  display: grid;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 9px 40px 9px 10px;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  text-align: start;
+}
+.card button.open:hover:not(:disabled) {
+  background: none;
+}
+.card .quote {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+.mark {
+  padding: 1px 2px;
+  border-radius: 3px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.card .note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 2px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--hover);
+  color: var(--fg);
+  transition: background-color 0.15s;
+}
+.card:hover .note,
+.card:focus-within .note {
+  background: var(--bg);
+}
+.card .note svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.card .note span {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+.card .hint {
+  font-size: 12px;
+}
+.orphan .mark {
+  text-decoration: underline dashed var(--muted);
+  text-underline-offset: 3px;
+}
+.card .remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    background-color 0.15s;
+}
+.card:hover .remove,
+.card:focus-within .remove {
+  opacity: 1;
+}
+.card .remove:hover:not(:disabled) {
+  background: var(--bg);
+  color: var(--danger);
+}
+@media (hover: none) {
+  .card .remove {
+    opacity: 1;
+  }
+}
+.blank {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 48px 24px;
+  text-align: center;
+}
+.blank p {
+  margin: 0;
+}
+.blank-title {
+  font-weight: 500;
+}
+.blank button {
+  margin-top: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-page="sidebar"] *,
+  [data-page="sidebar"] *::before {
+    /* biome-ignore lint/complexity/noImportantStyles: it has to turn off every transition. */
+    transition: none !important;
+  }
 }
