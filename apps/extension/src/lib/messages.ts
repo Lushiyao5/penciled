@@ -6,6 +6,7 @@ export type Request =
   | { type: 'state' }
   | { type: 'focus'; id: string }
   | { type: 'remove'; id: string }
+  | { type: 'tags'; id: string; tags: string[] }
   /** Turns penciled on or off for the tab's whole site. */
   | { type: 'site'; enabled: boolean }
   /** From the keyboard shortcut: hides or shows penciled on this tab. */
@@ -17,6 +18,7 @@ export interface Item {
   quote: string;
   note?: string;
   color: string;
+  tags: string[];
   /** Its text couldn't be found on the page, so it isn't painted. */
   orphan: boolean;
 }

@@ -1,3 +1,4 @@
+import type { Worker } from '@playwright/test';
 import { expect, painted, send, store, stored, tabId, test } from './fixtures.ts';
 
 const ARTICLE = 'http://localhost:5180/article.html';
@@ -15,6 +16,14 @@ const annotation = (id: string, quote: string, extra = {}) => ({
   updatedAt: '2026-01-01T00:00:00.000Z',
   ...extra,
 });
+
+/** The tags stored for annotation `id` on page `url`. */
+async function tagsOf(background: Worker, url: string, id: string) {
+  const page = (await stored(background))[`page:${url}`] as {
+    annotations: { id: string; meta?: { tags?: string[] } }[];
+  };
+  return page.annotations.find((a) => a.id === id)?.meta?.tags;
+}
 
 test.beforeEach(async ({ background }) => {
   await store(background, 'local', {
@@ -171,4 +180,77 @@ test('the toolbar button opens the sidebar when the settings say so', async ({
   await expect.poll(button).toEqual({ popup: '', sidebar: true });
   await settings.getByRole('radio', { name: 'This page’s highlights' }).check();
   await expect.poll(button).toEqual({ popup: 'popup.html', sidebar: false });
+});
+
+test('tags highlights on this page, and filters by them', async ({
+  context,
+  background,
+  extension,
+}) => {
+  const page = await context.newPage();
+  await page.goto(ARTICLE);
+  await expect.poll(() => painted(page)).toMatchObject({ 'penciled-c2': ['lazy dog'] });
+
+  const sidebar = await context.newPage();
+  await sidebar.goto(`${extension}/sidepanel.html?tab=${await tabId(background, page)}`);
+  await sidebar.getByRole('tab', { name: 'This page' }).click();
+  const cards = sidebar.getByRole('listitem');
+  await cards.first().hover();
+  await cards.first().getByRole('button', { name: 'Edit tags' }).click();
+  const field = sidebar.getByRole('combobox', { name: 'Add a tag' });
+  await expect(field).toBeFocused();
+  await field.fill('Reading list');
+  await field.press('Enter');
+  await field.pressSequentially('fox,');
+  await expect(cards.first().getByText('#fox')).toBeVisible();
+  await expect.poll(() => tagsOf(background, ARTICLE, 'a')).toEqual(['reading-list', 'fox']);
+
+  // Backspace in an empty field removes the last tag; Escape closes it.
+  await expect(field).toBeFocused();
+  await field.press('Backspace');
+  await expect(cards.first().getByText('#fox')).toHaveCount(0);
+  await field.press('Escape');
+  await expect(field).toHaveCount(0);
+  await expect(cards.first().getByRole('button', { name: '#reading-list' })).toBeVisible();
+
+  const filter = sidebar.getByRole('group', { name: 'Filter by tag' }).getByRole('button');
+  await expect(filter).toHaveText(['#reading-list']);
+  await filter.click();
+  await expect(filter).toHaveAttribute('aria-pressed', 'true');
+  await expect(sidebar.getByRole('searchbox')).toHaveValue('#reading-list');
+  await expect(cards).toHaveCount(1);
+  await filter.click();
+  await expect(cards).toHaveCount(2);
+});
+
+test('suggests tags in use, and tags highlights on other pages', async ({
+  context,
+  background,
+  extension,
+}) => {
+  await store(background, 'local', {
+    [`page:${ARTICLE}`]: {
+      version: 1,
+      annotations: [annotation('a', 'lazy dog', { meta: { tags: ['reading-list'] } })],
+    },
+  });
+  const sidebar = await context.newPage();
+  // No page of its own: the sidebar's own tab.
+  await sidebar.goto(`${extension}/sidepanel.html?tab=999999`);
+  await sidebar.getByRole('tab', { name: 'All pages' }).click();
+  const essay = sidebar.locator('.group').filter({ hasText: 'On essays' });
+  await essay.getByRole('listitem').hover();
+  await essay.getByRole('button', { name: 'Edit tags' }).click();
+  const field = sidebar.getByRole('combobox', { name: 'Add a tag' });
+  await field.fill('read');
+  await expect(sidebar.getByRole('option')).toHaveText(['#reading-list']);
+  await field.press('ArrowDown');
+  await field.press('Enter');
+  await field.press('Escape');
+  await expect.poll(() => tagsOf(background, OTHER, 'c')).toEqual(['reading-list']);
+
+  await sidebar.getByRole('searchbox').fill('#reading-list');
+  await expect(sidebar.locator('.group')).toHaveCount(2);
+  await sidebar.getByRole('searchbox').fill('#reading-list montaigne');
+  await expect(sidebar.locator('.group')).toHaveCount(1);
 });
