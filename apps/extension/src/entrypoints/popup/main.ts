@@ -20,14 +20,22 @@ async function shortcut(): Promise<string> {
   return commands.find((c) => c.name === 'toggle')?.shortcut || 'the shortcut';
 }
 
-const settingsButton = () => {
-  const button = h(
+/** Opens a tab of the extension page, `notes` or `settings`. */
+const openPage = (view: string) => {
+  browser.tabs.create({ url: `${browser.runtime.getURL('/options.html')}#${view}` });
+  window.close();
+};
+
+const links = () => {
+  const notes = h('button', { type: 'button', class: 'link' }, 'All notes');
+  notes.onclick = () => openPage('notes');
+  const settings = h(
     'button',
     { type: 'button', class: 'icon', 'aria-label': 'Settings', title: 'Settings' },
     '⚙',
   );
-  button.onclick = () => browser.runtime.openOptionsPage();
-  return button;
+  settings.onclick = () => openPage('settings');
+  return h('span', { class: 'links' }, notes, settings);
 };
 
 function render(tab: number, state: PageState, keys: string) {
@@ -96,7 +104,7 @@ function render(tab: number, state: PageState, keys: string) {
       'header',
       {},
       h('label', { class: 'switch' }, enabled, h('span', {}, 'On ', h('strong', {}, state.site))),
-      settingsButton(),
+      links(),
     ),
     body,
   );
@@ -110,7 +118,7 @@ async function main() {
   } catch {
     // The browser's own pages, the extension store, or a tab opened before penciled was installed.
     app.replaceChildren(
-      h('header', {}, h('span', {}, 'penciled'), settingsButton()),
+      h('header', {}, h('span', {}, 'penciled'), links()),
       h(
         'p',
         { class: 'empty' },

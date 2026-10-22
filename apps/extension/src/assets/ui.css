@@ -222,3 +222,88 @@ dd {
   margin: 0;
   font-family: ui-monospace, monospace;
 }
+
+/* The extension page's tabs */
+[data-page="options"] > main > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+nav {
+  display: flex;
+  gap: 4px;
+}
+nav a {
+  padding: 5px 12px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+}
+nav a:hover {
+  background: var(--hover);
+}
+nav a[aria-current="page"] {
+  color: var(--fg);
+  background: var(--hover);
+  font-weight: 600;
+}
+
+/* Notes */
+.notice {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.notice p {
+  margin: 0;
+}
+.notice p:empty {
+  display: none;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+input[type="search"] {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.results .empty {
+  padding: 32px 16px;
+}
+.page h3 {
+  margin: 12px 0 4px;
+  overflow-wrap: anywhere;
+}
+.page h3 a {
+  color: inherit;
+}
+.page .items {
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+}
+.page .item {
+  padding: 6px 0;
+}
+.page .item .actions {
+  flex: none;
+  margin: 0;
+  gap: 0;
+}
+.links {
+  display: flex;
+  flex: none;
+  align-items: center;
+}

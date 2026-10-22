@@ -1,15 +1,37 @@
 import type { Annotation } from 'penciled/headless';
 import { browser } from 'wxt/browser';
-import { type PageData, pageKey } from './storage.ts';
+import { type PageData, type PageMeta, pageKey, writePage } from './storage.ts';
+
+/** An annotated page, as the notes page lists it. */
+export interface Page extends PageMeta {
+  id: string;
+  annotations: Annotation[];
+}
+
+/** Every annotated page, most recently changed first. */
+export async function listPages(): Promise<Page[]> {
+  const all = await browser.storage.local.get(null);
+  const pages: Page[] = [];
+  for (const [key, value] of Object.entries(all)) {
+    if (!key.startsWith('page:')) continue;
+    const id = key.slice(5);
+    const meta = all[`meta:${id}`] as PageMeta | undefined;
+    const { annotations } = value as PageData;
+    pages.push({
+      id,
+      url: meta?.url ?? id,
+      title: meta?.title ?? '',
+      count: annotations.length,
+      updatedAt: meta?.updatedAt ?? '',
+      annotations,
+    });
+  }
+  return pages.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
 
 /** Every annotated page's annotations, by page id. */
 export async function allPages(): Promise<Map<string, Annotation[]>> {
-  const all = await browser.storage.local.get(null);
-  const pages = new Map<string, Annotation[]>();
-  for (const [key, value] of Object.entries(all)) {
-    if (key.startsWith('page:')) pages.set(key.slice(5), (value as PageData).annotations);
-  }
-  return pages;
+  return new Map((await listPages()).map((p) => [p.id, p.annotations]));
 }
 
 /** How many highlights use each color id, across every page. */
@@ -21,10 +43,7 @@ export async function colorUsage(): Promise<Map<string, number>> {
   return usage;
 }
 
-/**
- * Moves every highlight colored `from` to `to`. Tabs already open on those pages show the change
- * once reloaded.
- */
+/** Moves every highlight colored `from` to `to`. Open tabs follow through storage. */
 export async function recolor(from: string, to: string): Promise<void> {
   const updatedAt = new Date().toISOString();
   const changed: Record<string, PageData> = {};
@@ -36,4 +55,32 @@ export async function recolor(from: string, to: string): Promise<void> {
     };
   }
   await browser.storage.local.set(changed);
+}
+
+/** Deletes one annotation. A tab open on the page removes it too. */
+export async function deleteAnnotation(page: Page, id: string): Promise<void> {
+  const key = pageKey(page.id);
+  const data = (await browser.storage.local.get(key))[key] as PageData | undefined;
+  const annotations = (data?.annotations ?? []).filter((a) => a.id !== id);
+  await writePage(page.id, page, annotations);
+}
+
+// Read by the content script of the tab opened from the notes page, to scroll to the highlight.
+const OPEN = 'open';
+const OPEN_FOR = 60_000;
+
+/** Opens `page` in a new tab, scrolled to annotation `id`. */
+export async function openAnnotation(page: Page, id: string): Promise<void> {
+  await browser.storage.local.set({ [OPEN]: { page: page.id, id, at: Date.now() } });
+  await browser.tabs.create({ url: page.url });
+}
+
+/** The annotation to scroll to on page `pageId`, if it was just opened from the notes page. */
+export async function takeOpened(pageId: string): Promise<string | undefined> {
+  const open = (await browser.storage.local.get(OPEN))[OPEN] as
+    | { page: string; id: string; at: number }
+    | undefined;
+  if (open?.page !== pageId || Date.now() - open.at > OPEN_FOR) return;
+  await browser.storage.local.remove(OPEN);
+  return open.id;
 }

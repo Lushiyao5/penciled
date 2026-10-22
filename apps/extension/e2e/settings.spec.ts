@@ -8,7 +8,7 @@ test('the theme applies to open pages right away', async ({ context, extension }
   const page = await context.newPage();
   await page.goto(ARTICLE);
   const settings = await context.newPage();
-  await settings.goto(`${extension}/options.html`);
+  await settings.goto(`${extension}/options.html#settings`);
   await settings.getByRole('radio', { name: 'Dark' }).check();
   await select(page, 'lazy dog');
   await expect(page.locator(toolbar)).toHaveAttribute('data-penciled-theme', 'dark');
@@ -16,7 +16,7 @@ test('the theme applies to open pages right away', async ({ context, extension }
 
 test('with the toolbar off on selection, Alt+A opens it', async ({ context, extension }) => {
   const settings = await context.newPage();
-  await settings.goto(`${extension}/options.html`);
+  await settings.goto(`${extension}/options.html#settings`);
   await settings.getByRole('checkbox', { name: 'Show the toolbar when I select text' }).uncheck();
 
   const page = await context.newPage();
@@ -44,7 +44,7 @@ test('editing, removing and replacing colors never hides a highlight', async ({
     );
 
   const settings = await context.newPage();
-  await settings.goto(`${extension}/options.html`);
+  await settings.goto(`${extension}/options.html#settings`);
   const yellow = settings.locator('[data-color=c1]');
   await expect(yellow).toContainText('1 highlight');
 
@@ -77,7 +77,7 @@ test('colors can be added up to a full toolbar row, and unused ones removed', as
   extension,
 }) => {
   const settings = await context.newPage();
-  await settings.goto(`${extension}/options.html`);
+  await settings.goto(`${extension}/options.html#settings`);
   const add = settings.getByRole('button', { name: 'Add a color' });
   for (let i = 0; i < 3; i++) await add.click();
   await expect(settings.locator('.colors li')).toHaveCount(8);
