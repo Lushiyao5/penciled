@@ -4,6 +4,7 @@ import { select, store, test } from '../e2e/fixtures.ts';
 // The size both stores ask for.
 const SIZE = { width: 1280, height: 800 };
 const out = (name: string) => `${import.meta.dirname}/screenshots/${name}.png`;
+const promo = (name: string) => `${import.meta.dirname}/promo/${name}.png`;
 const action = (key: string) => `[data-penciled-action="${key}"]`;
 
 async function highlight(page: Page, text: string, color: string, note?: string) {
@@ -14,7 +15,8 @@ async function highlight(page: Page, text: string, color: string, note?: string)
     await page.keyboard.press('ControlOrMeta+Enter');
   } else await page.locator(action(`color-${color}`)).click();
   await page.evaluate(() => getSelection()?.removeAllRanges());
-  await page.mouse.click(5, SIZE.height - 5);
+  // Closes the toolbar.
+  await page.mouse.click(5, page.viewportSize()!.height - 5);
 }
 
 async function article(page: Page) {
@@ -121,4 +123,26 @@ test('settings', async ({ context, extension }) => {
   await settings.goto(`${extension}/options.html#settings`);
   await settings.getByRole('heading', { name: 'Colors' }).waitFor();
   await settings.screenshot({ path: out('5-settings') });
+});
+
+// The Chrome Web Store's promo tiles.
+test('small promo tile', async ({ context }) => {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 440, height: 280 });
+  await page.goto('/small-tile.html');
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({ path: promo('small-tile') });
+});
+
+test('marquee promo tile', async ({ context }) => {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 1400, height: 560 });
+  await page.goto('/marquee.html');
+  await page.evaluate(() => document.fonts.ready);
+  await highlight(page, 'A highlight is a small act of attention.', 'c1');
+  await highlight(page, 'records why', 'c2');
+  await select(page, 'They appear when you select a sentence');
+  await page.locator(action('color-c1')).waitFor();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: promo('marquee') });
 });

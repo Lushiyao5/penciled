@@ -2,7 +2,7 @@
 
 What to fill in on the [Chrome Web Store](https://chrome.google.com/webstore/devconsole) and [Edge Add-ons](https://partner.microsoft.com/dashboard/microsoftedge/) dashboards. Upload `penciled-<version>-chrome.zip` and `penciled-<version>-edge.zip` from the [extension release](https://github.com/marcellosso/penciled/releases?q=extension&expanded=true).
 
-Screenshots are in `screenshots/` (1280×800). Regenerate them with `pnpm --filter extension screenshots`. The store icon is `public/icon/128.png`; regenerate the icons with `pnpm --filter extension icons`.
+Screenshots are in `screenshots/` (1280×800), and the Chrome Web Store's promo tiles in `promo/`: `small-tile.png` (440×280) and `marquee.png` (1400×560). Regenerate them all with `pnpm --filter extension screenshots`. No promo video for now. The store icon is `public/icon/128.png`; regenerate the icons with `pnpm --filter extension icons`.
 
 ## Listing
 
