@@ -102,6 +102,8 @@ export default defineContentScript({
 
     const state = (): PageState => ({
       site: site(),
+      page: pageId(url),
+      title: document.title,
       disabled: disabled.includes(site()),
       hidden,
       colors: settings.colors,
@@ -117,9 +119,14 @@ export default defineContentScript({
         .sort((a, b) => +a.orphan - +b.orphan),
     });
 
+    // Tells the sidebar, which lists this tab's highlights, about changes it can't see in storage.
+    const changed = () => browser.runtime.sendMessage({ type: 'changed' }).catch(() => {});
+
     const handle = async (message: Request) => {
-      if (message.type === 'toggle') hidden = !hidden;
-      else if (message.type === 'focus') instance?.focus(message.id);
+      if (message.type === 'toggle') {
+        hidden = !hidden;
+        changed();
+      } else if (message.type === 'focus') instance?.focus(message.id);
       else if (message.type === 'remove') instance?.remove(message.id);
       else if (message.type === 'site') {
         // Applied here right away; other tabs on the site follow through storage.
@@ -145,16 +152,16 @@ export default defineContentScript({
     ctx.addEventListener(window, 'wxt:locationchange', (e) => {
       url = e.newUrl.href;
       start();
+      changed();
     });
     browser.storage.local.onChanged.addListener(sync);
     const unwatch = [
       () => browser.storage.local.onChanged.removeListener(sync),
       onSettings((next, previous) => {
         settings = next;
-        // The theme applies live; anything else rebuilds the toolbar.
-        const { theme: _, ...rest } = next;
-        const { theme: __, ...was } = previous;
-        if (JSON.stringify(rest) === JSON.stringify(was)) return instance?.setTheme(next.theme);
+        // The theme applies live; the colors or how the toolbar opens rebuild it.
+        const toolbar = (s: Settings) => JSON.stringify([s.openOnSelect, s.colors]);
+        if (toolbar(next) === toolbar(previous)) return instance?.setTheme(next.theme);
         stop();
         start();
       }),

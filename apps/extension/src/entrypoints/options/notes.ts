@@ -3,6 +3,7 @@ import { BackupError, bySite, createBackup, restoreBackup, toMarkdown } from '..
 import { h } from '../../lib/dom.ts';
 import { deleteAnnotation, listPages, openAnnotation, type Page } from '../../lib/pages.ts';
 import { highlight } from '../../lib/scheme.ts';
+import { search } from '../../lib/search.ts';
 import { getSettings } from '../../lib/settings.ts';
 import { plural } from './settings.ts';
 
@@ -106,16 +107,7 @@ function list(
       ),
     ];
   }
-  const q = query.trim().toLowerCase();
-  const found = (page: Page, a: Annotation) =>
-    !q || [a.quote, a.note ?? '', page.title, page.url].some((t) => t.toLowerCase().includes(q));
-  const shown = pages
-    .map((page) => ({
-      ...page,
-      // In page order.
-      annotations: page.annotations.filter((a) => found(page, a)).sort((a, b) => a.start - b.start),
-    }))
-    .filter((page) => page.annotations.length);
+  const shown = search(pages, query);
   if (!shown.length) return [h('p', { class: 'empty' }, `Nothing matches “${query.trim()}”.`)];
 
   const item = (page: Page, a: Annotation) => {
