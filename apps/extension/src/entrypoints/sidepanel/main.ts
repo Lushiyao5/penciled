@@ -141,7 +141,8 @@ function card(c: Card): HTMLLIElement {
   if (value && !c.orphan) mark.style.backgroundColor = highlight(value, dark.matches);
   const content = [
     h('span', { class: 'quote' }, mark),
-    c.note && h('span', { class: 'note' }, c.note),
+    // The reader's own words, set apart from the page's.
+    c.note && h('span', { class: 'note' }, ICONS.pencil(), h('span', {}, c.note)),
     c.orphan && h('span', { class: 'hint' }, 'Couldn’t find this on the page.'),
   ];
   // A highlight that can't be found has nowhere to go.

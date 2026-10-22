@@ -523,10 +523,33 @@ input[type="search"] {
   box-decoration-break: clone;
 }
 .card .note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 2px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--hover);
+  color: var(--fg);
+  transition: background-color 0.15s;
+}
+.card:hover .note,
+.card:focus-within .note {
+  background: var(--bg);
+}
+.card .note svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.card .note span {
   display: -webkit-box;
   overflow: hidden;
+  overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
 }
 .card .hint {
   font-size: 12px;
