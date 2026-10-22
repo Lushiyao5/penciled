@@ -58,13 +58,24 @@ function locate({ text, selecting }: { text: string; selecting: boolean }) {
   throw new Error(`"${text}" not found`);
 }
 
+/**
+ * Waits for the content script to start penciled on the page. It runs at document_idle and loads
+ * the settings first, so on a slow machine a selection made right after `goto` comes before
+ * penciled listens for it, and the toolbar never opens.
+ */
+function started(page: Page): Promise<void> {
+  return page.locator('penciled-ui').waitFor({ state: 'attached' });
+}
+
 /** Selects the first occurrence of `text` on the page, as a reader would. */
 export async function select(page: Page, text: string): Promise<void> {
+  await started(page);
   await page.evaluate(locate, { text, selecting: true });
 }
 
 /** Clicks the first character of the first occurrence of `text` on the page. */
 export async function click(page: Page, text: string): Promise<void> {
+  await started(page);
   const { x, y } = await page.evaluate(locate, { text, selecting: false });
   await page.mouse.click(x, y);
 }
