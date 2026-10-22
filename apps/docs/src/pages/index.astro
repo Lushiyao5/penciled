@@ -14,23 +14,43 @@ import { scoped, skins } from '../skins.ts';
 const github = 'https://github.com/marcellosso/penciled';
 const npm = 'https://www.npmjs.com/package/penciled';
 
-const title = 'penciled: text highlights and notes for any webpage';
-const description =
-  'A tiny, framework-agnostic JavaScript library that adds beautiful, persistent text highlights and notes to any webpage. 15 kB, no backend, never touches your DOM.';
+const title = 'penciled.js: JavaScript highlights & notes library';
+const summary =
+  'penciled is a 15 kB open-source JavaScript library for persistent highlights and notes on any web page.';
+const description = `${summary} Framework-agnostic, no backend, never touches your DOM.`;
 const canonical = Astro.site && new URL('/', Astro.site).href;
 const ogImage = Astro.site ? new URL('/og.png', Astro.site).href : '/og.png';
+const author = { '@type': 'Person', name: 'Marcel Losso', url: 'https://github.com/marcellosso' };
 const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'SoftwareSourceCode',
-  name: 'penciled',
-  description,
-  ...(canonical && { url: canonical }),
-  codeRepository: github,
-  programmingLanguage: ['TypeScript', 'JavaScript'],
-  runtimePlatform: 'Web browser',
-  license: 'https://opensource.org/licenses/MIT',
-  keywords:
-    'text highlight, annotation, notes, CSS Custom Highlight API, JavaScript library, React',
+  '@graph': [
+    {
+      '@type': 'SoftwareApplication',
+      name: 'penciled.js',
+      alternateName: 'penciled',
+      description,
+      ...(canonical && { url: canonical }),
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Any (web browser)',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      license: 'https://opensource.org/licenses/MIT',
+      image: ogImage,
+      author,
+      sameAs: [github, npm],
+    },
+    {
+      '@type': 'SoftwareSourceCode',
+      name: 'penciled',
+      description,
+      codeRepository: github,
+      programmingLanguage: ['TypeScript', 'JavaScript'],
+      runtimePlatform: 'Web browser',
+      license: 'https://opensource.org/licenses/MIT',
+      author,
+      keywords:
+        'text highlight, annotation, notes, CSS Custom Highlight API, JavaScript library, React',
+    },
+  ],
 };
 
 const setup = `import { annotate } from 'penciled';
@@ -98,7 +118,7 @@ export function Post({ post }) {
     <meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="penciled" />
+    <meta property="og:site_name" content="penciled.js" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     {canonical && <meta property="og:url" content={canonical} />}
@@ -151,9 +171,13 @@ export function Post({ post }) {
 
     <main class="column">
       <section class="intro">
-        <h1>Read with a pencil in hand.</h1>
+        <h1>
+          <span class="name">penciled.js: JavaScript highlights &amp; notes library</span>
+          Read with a pencil in hand.
+        </h1>
         <p class="facts">
-          Highlights and notes for any webpage. 15&nbsp;kB, no backend, never touches your DOM.
+          penciled is a 15&nbsp;kB open-source JavaScript library for persistent highlights and
+          notes on any web page. No backend, and it never touches your DOM.
         </p>
         <div class="actions">
           <div class="install">
