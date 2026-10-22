@@ -486,12 +486,12 @@ input[type="search"] {
 }
 .card {
   position: relative;
-  overflow: hidden;
   border-radius: 10px;
   transition: background-color 0.15s;
 }
 .card:hover,
-.card:focus-within {
+.card:focus-within,
+.card[data-editing] {
   background: var(--hover);
 }
 .card .open {
@@ -499,7 +499,7 @@ input[type="search"] {
   gap: 4px;
   box-sizing: border-box;
   width: 100%;
-  padding: 9px 40px 9px 10px;
+  padding: 9px 68px 9px 10px;
   border: 0;
   border-radius: inherit;
   background: none;
@@ -558,10 +558,22 @@ input[type="search"] {
   text-decoration: underline dashed var(--muted);
   text-underline-offset: 3px;
 }
-.card .remove {
+.card-actions {
   position: absolute;
   top: 6px;
   right: 6px;
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.card:hover .card-actions,
+.card:focus-within .card-actions,
+.card[data-editing] .card-actions {
+  opacity: 1;
+}
+.card-actions button {
   display: grid;
   place-items: center;
   padding: 6px;
@@ -569,25 +581,33 @@ input[type="search"] {
   border-radius: 7px;
   background: none;
   color: var(--muted);
-  opacity: 0;
   transition:
-    opacity 0.15s,
     color 0.15s,
     background-color 0.15s;
 }
-.card:hover .remove,
-.card:focus-within .remove {
-  opacity: 1;
-}
-.card .remove:hover:not(:disabled) {
+.card-actions button:hover:not(:disabled),
+.card[data-editing] .card-actions .tag {
   background: var(--bg);
+  color: var(--fg);
+}
+.card-actions .remove:hover:not(:disabled) {
   color: var(--danger);
 }
 @media (hover: none) {
-  .card .remove {
+  .card-actions {
     opacity: 1;
   }
 }
+.card .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 10px 9px;
+}
+.card .open:has(+ .tags) {
+  padding-bottom: 6px;
+}
+
 .blank {
   display: grid;
   justify-items: center;
@@ -604,10 +624,153 @@ input[type="search"] {
 .blank button {
   margin-top: 12px;
 }
+/* Tags */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
+}
+button.chip:hover:not(:disabled) {
+  background: var(--bg);
+  color: var(--fg);
+}
+button.chip[aria-pressed="true"],
+button.chip[aria-pressed="true"]:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.filters {
+  display: flex;
+  gap: 4px;
+  margin: 0 -12px;
+  padding: 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Fades chips out at the edges as they scroll. */
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent
+  );
+}
+.filters[hidden] {
+  display: none;
+}
+.filters .chip {
+  flex: none;
+}
+.tag-editor {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  cursor: text;
+  transition: border-color 0.15s;
+}
+.tag-editor:focus-within {
+  border-color: var(--ring);
+}
+.tag-editor .chip {
+  padding-right: 2px;
+  color: var(--fg);
+}
+.tag-editor .chip button {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 99px;
+  background: none;
+  color: var(--muted);
+}
+.tag-editor .chip button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--fg);
+}
+.tag-editor .chip svg {
+  width: 12px;
+  height: 12px;
+}
+.tag-editor input {
+  flex: 1;
+  min-width: 80px;
+  padding: 1px 4px;
+  border: 0;
+  background: none;
+  font-size: 13px;
+}
+.tag-editor input:focus-visible {
+  outline: none;
+}
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  list-style: none;
+  animation: penciled-pop 0.12s var(--ease);
+}
+.suggestions[hidden] {
+  display: none;
+}
+.suggestions li {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.suggestions li:hover,
+.suggestions li[aria-selected="true"] {
+  background: var(--hover);
+}
+@keyframes penciled-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+.body .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
 @media (prefers-reduced-motion: reduce) {
   [data-page="sidebar"] *,
   [data-page="sidebar"] *::before {
     /* biome-ignore lint/complexity/noImportantStyles: it has to turn off every transition. */
     transition: none !important;
+  }
+  .suggestions {
+    animation: none;
   }
 }

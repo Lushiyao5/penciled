@@ -140,13 +140,17 @@ test('highlights keep their color in a browser whose palette differs', async () 
 });
 
 test('Markdown lists highlights by site and page', async () => {
-  await save(URL_A, [annotation('a', { note: 'First note' })], 'A [great] post');
+  await save(
+    URL_A,
+    [annotation('a', { note: 'First note', meta: { tags: ['to-read', 'fox'] } })],
+    'A [great] post',
+  );
   await save(URL_B, [annotation('b')], '');
   const markdown = toMarkdown(await listPages());
   expect(markdown).toContain(
     '## example.com\n\n### [A \\[great\\] post](<https://example.com/post>)',
   );
-  expect(markdown).toContain('> quote a\n\nFirst note');
+  expect(markdown).toContain('> quote a\n\nFirst note\n\n#to-read #fox');
   expect(markdown).toContain(`### [${URL_B}](<${URL_B}>)\n\n> quote b`);
 });
 

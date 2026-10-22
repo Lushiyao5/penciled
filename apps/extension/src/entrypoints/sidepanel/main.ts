@@ -2,23 +2,34 @@ import '../../assets/ui.css';
 import { browser } from 'wxt/browser';
 import { h, ICONS } from '../../lib/dom.ts';
 import { ask, type PageState } from '../../lib/messages.ts';
-import { deleteAnnotation, listPages, openAnnotation, type Page } from '../../lib/pages.ts';
+import {
+  deleteAnnotation,
+  listPages,
+  openAnnotation,
+  type Page,
+  setTags,
+} from '../../lib/pages.ts';
 import { highlight } from '../../lib/scheme.ts';
-import { search } from '../../lib/search.ts';
+import { formatQuery, matchesQuery, parseQuery, search } from '../../lib/search.ts';
 import { getSettings, onSettings, type PaletteColor } from '../../lib/settings.ts';
 import { PORT } from '../../lib/sidebar.ts';
 import { siteOf } from '../../lib/sites.ts';
+import { countTags, tagsOf } from '../../lib/tags.ts';
+import { tagEditor } from './tags.ts';
 
 type View = 'page' | 'all';
 
 /** A highlight as a card shows it, from the page's tab or from storage. */
 interface Card {
+  id: string;
   quote: string;
   note?: string;
   color: string;
+  tags: string[];
   orphan?: boolean;
   open: () => unknown;
   remove: () => Promise<unknown>;
+  setTags: (tags: string[]) => Promise<unknown>;
 }
 
 const app = document.getElementById('app')!;
@@ -34,6 +45,15 @@ let query = '';
 let tab: number | undefined;
 let colors: PaletteColor[] = [];
 let toggleKeys = '';
+// Every tag in use, most used first.
+let known: string[] = [];
+// The highlight whose tags are being edited, and what's typed there.
+let editing: string | undefined;
+let draft = '';
+// Where focus goes after the next render, by highlight id and the control's class.
+let refocus: { id: string; control: string } | undefined;
+// The tags in the current view, to filter by.
+let scope: string[] = [];
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -65,17 +85,44 @@ const input = h('input', {
   placeholder: 'Search',
   'aria-label': 'Search highlights and notes',
 });
-input.oninput = () => {
-  query = input.value;
+const setQuery = (next: string) => {
+  input.value = query = next;
   render();
+};
+input.oninput = () => setQuery(input.value);
+
+/** Filters by `tag`, or stops filtering by it. */
+const toggleFilter = (tag: string) => {
+  const q = parseQuery(query);
+  const tags = q.tags.includes(tag) ? q.tags.filter((t) => t !== tag) : [...q.tags, tag];
+  setQuery(formatQuery({ ...q, tags }));
 };
 input.onkeydown = (e) => {
   if (e.key === 'Escape' && input.value) {
     e.stopPropagation();
-    input.value = query = '';
-    render();
+    setQuery('');
   }
 };
+
+const filters = h('div', { class: 'filters', role: 'group', 'aria-label': 'Filter by tag' });
+
+/** The tag filters for `tags`, the ones in the current view, and any already chosen. */
+function showFilters(tags: string[]) {
+  const chosen = parseQuery(query).tags;
+  const all = [...chosen, ...tags.filter((t) => !chosen.includes(t))];
+  filters.hidden = !all.length;
+  filters.replaceChildren(
+    ...all.map((tag) => {
+      const chip = h(
+        'button',
+        { type: 'button', class: 'chip', 'aria-pressed': `${chosen.includes(tag)}` },
+        `#${tag}`,
+      );
+      chip.onclick = () => toggleFilter(tag);
+      return chip;
+    }),
+  );
+}
 
 const list = h('div', { class: 'list', role: 'tabpanel' });
 const top = h(
@@ -83,6 +130,7 @@ const top = h(
   { class: 'top' },
   h('div', { class: 'bar' }, tablist, settings),
   h('label', { class: 'search' }, ICONS.search(), input),
+  filters,
 );
 app.replaceChildren(top, list);
 
@@ -126,6 +174,7 @@ const noMatch = () => blank('No matches', `Nothing matches “${query.trim()}”
 function collapse(el: HTMLElement): Promise<unknown> {
   if (still.matches) return Promise.resolve();
   const height = `${el.offsetHeight}px`;
+  el.style.overflow = 'hidden';
   return el.animate(
     [
       { height, opacity: 1 },
@@ -151,12 +200,69 @@ function card(c: Card): HTMLLIElement {
     : h('button', { type: 'button', class: 'open' }, ...content);
   if (!c.orphan) body.onclick = () => c.open();
 
+  const tagging = editing === c.id;
+  const changeTags = async (tags: string[]) => {
+    await c.setTags(tags);
+    render();
+  };
+  const tags = tagging
+    ? h(
+        'div',
+        { class: 'tags' },
+        tagEditor({
+          tags: c.tags,
+          known,
+          draft,
+          onDraft: (d) => {
+            draft = d;
+          },
+          onChange: changeTags,
+          onClose: () => {
+            editing = undefined;
+            draft = '';
+            refocus = { id: c.id, control: 'tag' };
+            render();
+          },
+        }),
+      )
+    : c.tags.length > 0 &&
+      h(
+        'div',
+        { class: 'tags' },
+        ...c.tags.map((tag) => {
+          const chip = h(
+            'button',
+            { type: 'button', class: 'chip', title: `Show only #${tag}` },
+            `#${tag}`,
+          );
+          chip.onclick = () => toggleFilter(tag);
+          return chip;
+        }),
+      );
+
+  const tag = h(
+    'button',
+    { type: 'button', class: 'tag', 'aria-label': 'Edit tags', title: 'Tags' },
+    ICONS.tag(),
+  );
+  tag.onclick = () => {
+    editing = tagging ? undefined : c.id;
+    draft = '';
+    refocus = editing ? undefined : { id: c.id, control: 'tag' };
+    render();
+  };
   const remove = h(
     'button',
     { type: 'button', class: 'remove', 'aria-label': 'Delete highlight', title: 'Delete' },
     ICONS.trash(),
   );
-  const li = h('li', { class: c.orphan ? 'card orphan' : 'card' }, body, remove);
+  const li = h(
+    'li',
+    { class: c.orphan ? 'card orphan' : 'card', 'data-id': c.id, 'data-editing': tagging },
+    body,
+    tags,
+    h('div', { class: 'card-actions' }, tag, remove),
+  );
   remove.onclick = async () => {
     await collapse(li);
     await c.remove();
@@ -206,10 +312,9 @@ async function pageView(): Promise<Node[]> {
     return [head, blank('Nothing highlighted yet', 'Select text on the page to highlight it.')];
   }
 
-  const q = query.trim().toLowerCase();
-  const items = state.items.filter(
-    (a) => !q || [a.quote, a.note ?? ''].some((t) => t.toLowerCase().includes(q)),
-  );
+  scope = countTags(state.items.map((a) => a.tags));
+  const q = parseQuery(query);
+  const items = state.items.filter((a) => matchesQuery([a.quote, a.note ?? ''], a.tags, q));
   if (!items.length) return [head, noMatch()];
   return [
     head,
@@ -221,23 +326,22 @@ async function pageView(): Promise<Node[]> {
           ...a,
           open: () => ask(id, { type: 'focus', id: a.id }),
           remove: () => ask(id, { type: 'remove', id: a.id }),
+          setTags: (tags) => ask(id, { type: 'tags', id: a.id, tags }),
         }),
       ),
     ),
   ];
 }
 
-async function allView(): Promise<Node[]> {
-  const [pages, current] = await Promise.all([
-    listPages(),
-    // To tell which page is this tab's, and focus its highlights there instead of reopening it.
-    tab
-      ? ask(tab, { type: 'state' }).then(
-          (s) => s.page,
-          () => undefined,
-        )
-      : undefined,
-  ]);
+async function allView(pages: Page[]): Promise<Node[]> {
+  // To tell which page is this tab's, and focus its highlights there instead of reopening it.
+  const current = tab
+    ? await ask(tab, { type: 'state' }).then(
+        (s) => s.page,
+        () => undefined,
+      )
+    : undefined;
+  scope = known;
   if (!pages.length) {
     return [blank('No highlights yet', 'Select text on any page to highlight it.')];
   }
@@ -271,6 +375,11 @@ async function allView(): Promise<Node[]> {
         ...page.annotations.map((a) =>
           card({
             ...a,
+            tags: tagsOf(a),
+            setTags: (tags) =>
+              here !== undefined
+                ? ask(here, { type: 'tags', id: a.id, tags })
+                : setTags(page, a.id, tags),
             open: () =>
               here !== undefined
                 ? ask(here, { type: 'focus', id: a.id })
@@ -300,10 +409,21 @@ async function render(enter = false) {
   }
   list.setAttribute('aria-labelledby', `tab-${view}`);
 
-  const content = await (view === 'page' ? pageView() : allView());
+  const pages = await listPages();
+  known = countTags(pages.flatMap((p) => p.annotations.map(tagsOf)));
+  scope = [];
+  const content = await (view === 'page' ? pageView() : allView(pages));
   // A newer render started while this one loaded.
   if (token !== renders) return;
   list.replaceChildren(...content);
+  showFilters(scope);
+  // Updates rebuild the list: focus goes back to where it was.
+  if (editing) list.querySelector<HTMLInputElement>('[data-editing] input')?.focus();
+  else if (refocus) {
+    const { id, control } = refocus;
+    refocus = undefined;
+    list.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"] .${control}`)?.focus();
+  }
   if (entering && !still.matches) {
     list.animate(
       [

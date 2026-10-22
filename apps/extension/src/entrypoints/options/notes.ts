@@ -3,8 +3,9 @@ import { BackupError, bySite, createBackup, restoreBackup, toMarkdown } from '..
 import { h } from '../../lib/dom.ts';
 import { deleteAnnotation, listPages, openAnnotation, type Page } from '../../lib/pages.ts';
 import { highlight } from '../../lib/scheme.ts';
-import { search } from '../../lib/search.ts';
+import { formatQuery, parseQuery, search } from '../../lib/search.ts';
 import { getSettings } from '../../lib/settings.ts';
+import { tagsOf } from '../../lib/tags.ts';
 import { plural } from './settings.ts';
 
 const dark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -64,7 +65,7 @@ export async function notesView(rerender: () => void): Promise<Node[]> {
     type: 'search',
     id: 'search',
     value: query,
-    placeholder: 'Search highlights and notes',
+    placeholder: 'Search highlights, notes and #tags',
     'aria-label': 'Search highlights and notes',
     disabled: !total,
   });
@@ -130,6 +131,24 @@ function list(
         { class: 'body' },
         h('span', {}, a.quote),
         a.note && h('span', { class: 'note' }, a.note),
+        tagsOf(a).length > 0 &&
+          h(
+            'span',
+            { class: 'tags' },
+            ...tagsOf(a).map((tag) => {
+              const chip = h(
+                'button',
+                { type: 'button', class: 'chip', title: `Show only #${tag}` },
+                `#${tag}`,
+              );
+              chip.onclick = () => {
+                const q = parseQuery(query);
+                if (!q.tags.includes(tag)) query = formatQuery({ ...q, tags: [...q.tags, tag] });
+                rerender();
+              };
+              return chip;
+            }),
+          ),
       ),
       h('span', { class: 'actions' }, open, remove),
     );

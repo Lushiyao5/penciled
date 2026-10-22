@@ -1,6 +1,7 @@
 import type { Annotation } from 'penciled/headless';
 import { browser } from 'wxt/browser';
 import { type PageData, type PageMeta, pageKey, writePage } from './storage.ts';
+import { withTags } from './tags.ts';
 
 /** An annotated page, as the notes page lists it. */
 export interface Page extends PageMeta {
@@ -62,6 +63,17 @@ export async function deleteAnnotation(page: Page, id: string): Promise<void> {
   const key = pageKey(page.id);
   const data = (await browser.storage.local.get(key))[key] as PageData | undefined;
   const annotations = (data?.annotations ?? []).filter((a) => a.id !== id);
+  await writePage(page.id, page, annotations);
+}
+
+/** Sets one annotation's tags. A tab open on the page picks them up. */
+export async function setTags(page: Page, id: string, tags: string[]): Promise<void> {
+  const key = pageKey(page.id);
+  const data = (await browser.storage.local.get(key))[key] as PageData | undefined;
+  const updatedAt = new Date().toISOString();
+  const annotations = (data?.annotations ?? []).map((a) =>
+    a.id === id ? { ...a, meta: withTags(a.meta, tags), updatedAt } : a,
+  );
   await writePage(page.id, page, annotations);
 }
 

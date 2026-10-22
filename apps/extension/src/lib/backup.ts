@@ -4,6 +4,7 @@ import { listPages, type Page } from './pages.ts';
 import { getSettings, nextColorId, type PaletteColor, saveSettings } from './settings.ts';
 import { siteOf } from './sites.ts';
 import { type PageData, pageEntries, pageKey } from './storage.ts';
+import { tagsOf } from './tags.ts';
 import { pageId } from './url.ts';
 
 /** Everything penciled stores in this browser, as an exported file holds it. */
@@ -124,6 +125,8 @@ export function toMarkdown(pages: Page[]): string {
       for (const a of page.annotations) {
         lines.push('', `> ${a.quote}`);
         if (a.note) lines.push('', a.note);
+        const tags = tagsOf(a);
+        if (tags.length) lines.push('', tags.map((t) => `#${t}`).join(' '));
       }
     }
   }
