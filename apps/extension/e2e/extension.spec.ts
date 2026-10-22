@@ -111,3 +111,15 @@ test('dark pages get dark highlight colors, even without a color-scheme', async 
   await page.evaluate(() => document.body.classList.add('light'));
   await expect.poll(yellow).toBe('#fde04780');
 });
+
+test('the toolbar follows the system theme', async ({ context }) => {
+  const page = await context.newPage();
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/article.html');
+  await select(page, 'lazy dog');
+  const background = () =>
+    page.locator(toolbar).evaluate((el) => getComputedStyle(el).backgroundColor);
+  await expect.poll(background).toBe('rgb(24, 24, 27)');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect.poll(background).toBe('rgb(255, 255, 255)');
+});

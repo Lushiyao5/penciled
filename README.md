@@ -2,7 +2,7 @@
 
 Beautiful, persistent text highlights and notes for any webpage. Think **Sonner, for text annotations**.
 
-[Documentation](https://penciled.org) · [Playground](https://penciled.org/playground/) · [npm](https://www.npmjs.com/package/penciled)
+[Documentation](https://penciled.org) · [Playground](https://penciled.org/playground/) · [npm](https://www.npmjs.com/package/penciled) · [Browser extension](https://penciled.org/extension/)
 
 ![Selecting a sentence, highlighting it in yellow and adding a note. After a reload the highlight comes back, and hovering it shows the note.](./.github/assets/demo.gif)
 
@@ -28,6 +28,10 @@ Readers can now select text to highlight it, add a note, or click a highlight to
 - **Persistent.** Uses `localStorage` out of the box. Plug in your own storage adapter to save to a backend.
 - **Accessible.** Keyboard shortcuts for the toolbar and for moving between annotations, with screen-reader announcements.
 - **Small.** About 15 kB min+gzip with the UI, 6 kB headless. One dependency (`@floating-ui/dom`).
+
+## Browser extension
+
+Not building a site? [penciled for the browser](https://penciled.org/extension/) lets you highlight and take notes on any website, in Chrome and Edge. It's built on this library and lives in [`apps/extension`](./apps/extension).
 
 ## Saving to your backend
 

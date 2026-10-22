@@ -119,6 +119,13 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Browser extension',
+          items: [
+            { label: 'Overview', slug: 'extension' },
+            { label: 'Privacy', slug: 'extension/privacy' },
+          ],
+        },
+        {
           label: 'API reference',
           items: [
             { label: 'annotate() options', slug: 'reference/options' },

@@ -1,6 +1,6 @@
 # penciled for the browser
 
-A browser extension for highlighting text and taking notes on any web page, built on [penciled](../../packages/penciled). Highlights are saved in the browser (`chrome.storage.local`) and come back when you return to a page. Nothing is sent anywhere.
+A browser extension for highlighting text and taking notes on any web page, built on [penciled](../../packages/penciled). For readers: [penciled.org/extension](https://penciled.org/extension/). Highlights are saved in the browser (`chrome.storage.local`) and come back when you return to a page. Nothing is sent anywhere.
 
 ## Development
 
@@ -12,6 +12,14 @@ pnpm --filter extension test:e2e   # builds, then runs Playwright against the un
 ```
 
 To try a build by hand, open `chrome://extensions`, turn on developer mode and load `apps/extension/.output/chrome-mv3` with "Load unpacked".
+
+## Releasing
+
+The extension is versioned separately from the library, and changesets ignores it.
+
+1. Bump `version` in `package.json` and add a section for it to [CHANGELOG.md](./CHANGELOG.md).
+2. After merging, tag the commit `extension-v<version>` and push the tag. The [Extension release](../../.github/workflows/extension-release.yml) workflow builds `penciled-<version>-chrome.zip` and `penciled-<version>-edge.zip` and attaches them to a GitHub release.
+3. Upload the zips to the stores by hand. [store/listing.md](./store/listing.md) has the listing text, and `store/screenshots/` the screenshots (`pnpm --filter extension screenshots` retakes them).
 
 ## How it works
 
