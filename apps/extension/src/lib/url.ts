@@ -12,7 +12,12 @@ export function pageId(href: string): string {
   url.hash = '';
   url.hostname = url.hostname.replace(/^www\./, '');
   // Only rewritten when something is removed, since rewriting re-encodes the rest.
-  const tracking = [...url.searchParams.keys()].filter((key) => TRACKING.test(key));
+  // forEach rather than keys(): in Firefox content scripts, iterators of page objects aren't
+  // iterable.
+  const tracking: string[] = [];
+  url.searchParams.forEach((_, key) => {
+    if (TRACKING.test(key)) tracking.push(key);
+  });
   for (const key of tracking) url.searchParams.delete(key);
   if (url.pathname.length > 1) url.pathname = url.pathname.replace(/\/+$/, '');
   return url.href.replace(/\?$/, '');

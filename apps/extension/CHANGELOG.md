@@ -1,5 +1,9 @@
 # penciled for the browser
 
+## 0.2.1
+
+- Fixes penciled not starting on any page in Firefox and Firefox-based browsers.
+
 ## 0.2.0
 
 - penciled now works in Firefox 140 or later, and in Firefox-based browsers such as Zen, Floorp and LibreWolf.
