@@ -20,6 +20,31 @@ export interface PageData {
 export const pageKey = (id: string): string => `page:${id}`;
 export const metaKey = (id: string): string => `meta:${id}`;
 
+/** Stores `annotations` as page `id`'s, or removes the page when there are none left. */
+export async function writePage(
+  id: string,
+  page: { url: string; title: string },
+  annotations: Annotation[],
+): Promise<void> {
+  if (!annotations.length) return browser.storage.local.remove([pageKey(id), metaKey(id)]);
+  await browser.storage.local.set(pageEntries(id, page, annotations));
+}
+
+/** The storage entries for page `id`, to write several pages at once. */
+export function pageEntries(
+  id: string,
+  page: { url: string; title: string },
+  annotations: Annotation[],
+): Record<string, PageData | PageMeta> {
+  const meta: PageMeta = {
+    url: page.url,
+    title: page.title,
+    count: annotations.length,
+    updatedAt: new Date().toISOString(),
+  };
+  return { [pageKey(id)]: { version: 1, annotations }, [metaKey(id)]: meta };
+}
+
 /**
  * Stores annotations in `chrome.storage.local`. Each change is applied to what's stored rather
  * than overwriting it, so the same page open in two tabs doesn't lose either tab's changes.
@@ -34,19 +59,8 @@ export function extensionStorage(page: () => { url: string; title: string }): An
     return data?.annotations ?? [];
   };
 
-  const write = async (id: string, annotations: Annotation[]) => {
-    if (!annotations.length) return browser.storage.local.remove([pageKey(id), metaKey(id)]);
-    const meta: PageMeta = {
-      ...page(),
-      count: annotations.length,
-      updatedAt: new Date().toISOString(),
-    };
-    const data: PageData = { version: 1, annotations };
-    await browser.storage.local.set({ [pageKey(id)]: data, [metaKey(id)]: meta });
-  };
-
   const change = (id: string, edit: (annotations: Annotation[]) => Annotation[]) => {
-    const next = queue.then(async () => write(id, edit(await read(id))));
+    const next = queue.then(async () => writePage(id, page(), edit(await read(id))));
     queue = next.catch(() => {});
     return next;
   };

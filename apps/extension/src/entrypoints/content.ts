@@ -5,10 +5,11 @@ import css from 'penciled/styles.css?inline';
 import { browser } from 'wxt/browser';
 import { defineContentScript } from 'wxt/utils/define-content-script';
 import type { PageState, Request } from '../lib/messages.ts';
+import { takeOpened } from '../lib/pages.ts';
 import { matchScheme } from '../lib/scheme.ts';
 import { getSettings, onSettings, type Settings } from '../lib/settings.ts';
 import { disabledSites, onDisabledSites, setSiteEnabled, siteOf } from '../lib/sites.ts';
-import { extensionStorage } from '../lib/storage.ts';
+import { extensionStorage, type PageData, pageKey } from '../lib/storage.ts';
 import { pageId } from '../lib/url.ts';
 
 export default defineContentScript({
@@ -74,6 +75,29 @@ export default defineContentScript({
           ...(hidden && { hidden }),
         })),
       });
+      const opened = instance;
+      // Opened from the notes page: scroll to the highlight that was clicked there.
+      opened.ready
+        .then(() => takeOpened(id))
+        .then((target) => target && instance === opened && opened.focus(target));
+    };
+
+    // Applies what the notes page, the settings page or another tab changed on this page's
+    // highlights. This tab's own changes are already in place, so they change nothing.
+    const sync = (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>) => {
+      const change = current && changes[pageKey(current)];
+      if (!change || !instance) return;
+      const before = (change.oldValue as PageData | undefined)?.annotations ?? [];
+      const after = (change.newValue as PageData | undefined)?.annotations ?? [];
+      const kept = new Set(after.map((a) => a.id));
+      for (const a of before) if (!kept.has(a.id)) instance.remove(a.id);
+      const had = new Set(before.map((a) => a.id));
+      // Ones missing here that were already stored were removed in this tab and not saved yet.
+      const newer = after.filter((a) => {
+        const mine = instance!.get(a.id);
+        return mine ? mine.updatedAt < a.updatedAt : !had.has(a.id);
+      });
+      if (newer.length) instance.import(newer);
     };
 
     const state = (): PageState => ({
@@ -122,7 +146,9 @@ export default defineContentScript({
       url = e.newUrl.href;
       start();
     });
+    browser.storage.local.onChanged.addListener(sync);
     const unwatch = [
+      () => browser.storage.local.onChanged.removeListener(sync),
       onSettings((next, previous) => {
         settings = next;
         // The theme applies live; anything else rebuilds the toolbar.

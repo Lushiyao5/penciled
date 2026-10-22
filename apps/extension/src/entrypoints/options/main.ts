@@ -1,236 +1,53 @@
 import '../../assets/ui.css';
 import { browser } from 'wxt/browser';
 import { h } from '../../lib/dom.ts';
-import { colorUsage, recolor } from '../../lib/pages.ts';
-import { highlight } from '../../lib/scheme.ts';
-import {
-  getSettings,
-  MAX_COLORS,
-  nextColorId,
-  onSettings,
-  type PaletteColor,
-  saveSettings,
-  type Theme,
-} from '../../lib/settings.ts';
-import { disabledSites, onDisabledSites, setSiteEnabled } from '../../lib/sites.ts';
+import { onSettings } from '../../lib/settings.ts';
+import { onDisabledSites } from '../../lib/sites.ts';
+import { notesView } from './notes.ts';
+import { settingsView } from './settings.ts';
 
 const app = document.getElementById('app')!;
-const dark = matchMedia('(prefers-color-scheme: dark)').matches;
-// Suggestions for new colors, in order.
-const SUGGESTED = ['#fdba74', '#5eead4', '#a5b4fc', '#fca5a5', '#bef264', '#d8b4fe', '#67e8f9'];
+const VIEWS = { notes: ['Notes', notesView], settings: ['Settings', settingsView] } as const;
+type View = keyof typeof VIEWS;
 
-// penciled's own shortcuts, as Mac keyboards label them.
-const MAC = /Mac/.test(navigator.platform);
-const key = (k: string) => (MAC ? `⌥${k}` : `Alt+${k}`);
-
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
-
-function section(title: string, ...children: (Node | string | false | undefined)[]) {
-  return h('section', {}, h('h2', {}, title), ...children);
-}
+const current = (): View => (location.hash === '#settings' ? 'settings' : 'notes');
 
 async function render() {
-  const [settings, sites, usage, commands] = await Promise.all([
-    getSettings(),
-    disabledSites(),
-    colorUsage(),
-    browser.commands.getAll(),
-  ]);
-  const used = (c: PaletteColor) => usage.get(c.id) ?? 0;
-  const visible = settings.colors.filter((c) => !c.hidden);
-  const retired = settings.colors.filter((c) => c.hidden);
-  const setColors = (colors: PaletteColor[]) => saveSettings({ colors });
-  const change = (id: string, patch: Partial<PaletteColor>) =>
-    setColors(settings.colors.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  // A retired color nobody uses any more can go.
-  const drop = (id: string) => setColors(settings.colors.filter((c) => c.id !== id));
-
-  // Theme
-  const theme = h(
-    'div',
-    { role: 'radiogroup', 'aria-label': 'Toolbar theme', class: 'choices' },
-    ...(
-      [
-        ['auto', 'Match my system'],
-        ['light', 'Light'],
-        ['dark', 'Dark'],
-      ] as [Theme, string][]
-    ).map(([value, label]) => {
-      const input = h('input', {
-        type: 'radio',
-        name: 'theme',
-        value,
-        checked: settings.theme === value,
-      });
-      input.onchange = () => saveSettings({ theme: value });
-      return h('label', {}, input, label);
-    }),
-  );
-
-  // Toolbar
-  const openOnSelect = h('input', { type: 'checkbox', checked: settings.openOnSelect });
-  openOnSelect.onchange = () => saveSettings({ openOnSelect: openOnSelect.checked });
-
-  // Colors
-  const swatch = (c: PaletteColor) => {
-    const sample = h('span', { class: 'sample' }, 'Sample');
-    sample.style.background = highlight(c.value, dark);
-    return sample;
-  };
-  const colorRow = (c: PaletteColor) => {
-    const value = h('input', { type: 'color', value: c.value, 'aria-label': `${c.label}: color` });
-    value.onchange = () => change(c.id, { value: value.value });
-    const label = h('input', {
-      type: 'text',
-      value: c.label,
-      maxlength: 24,
-      required: true,
-      'aria-label': `${c.label}: name`,
-    });
-    label.onchange = () => label.value.trim() && change(c.id, { label: label.value.trim() });
-    const remove = h(
-      'button',
-      { type: 'button', class: 'link', disabled: visible.length < 2 },
-      'Remove',
-    );
-    remove.onclick = () => (used(c) ? change(c.id, { hidden: true }) : drop(c.id));
-    return h(
-      'li',
-      { 'data-color': c.id },
-      value,
-      label,
-      swatch(c),
-      h('span', { class: 'hint' }, plural(used(c), 'highlight')),
-      remove,
-    );
-  };
-  const retiredRow = (c: PaletteColor) => {
-    const target = h(
-      'select',
-      { 'aria-label': `Move ${c.label} highlights to` },
-      ...visible.map((v) => h('option', { value: v.id }, v.label)),
-    );
-    const move = h('button', { type: 'button' }, 'Move');
-    move.onclick = async () => {
-      await recolor(c.id, target.value);
-      await drop(c.id);
-    };
-    const restore = h(
-      'button',
-      { type: 'button', class: 'link', disabled: visible.length >= MAX_COLORS },
-      'Restore',
-    );
-    restore.onclick = () => change(c.id, { hidden: false });
-    // Its last highlights were deleted since it was removed.
-    const remove = h('button', { type: 'button' }, 'Delete');
-    remove.onclick = () => drop(c.id);
-    return h(
-      'li',
-      { 'data-color': c.id },
-      swatch(c),
-      h('span', {}, c.label),
-      used(c)
-        ? h('span', { class: 'hint' }, `${plural(used(c), 'highlight')} still use it.`)
-        : h('span', { class: 'hint' }, 'No highlights use it any more.'),
-      used(c) ? h('span', { class: 'move' }, 'Move them to', target, move) : remove,
-      restore,
-    );
-  };
-  const add = h(
-    'button',
-    { type: 'button', disabled: visible.length >= MAX_COLORS },
-    'Add a color',
-  );
-  add.onclick = () => {
-    const taken = new Set(settings.colors.map((c) => c.value));
-    const value = SUGGESTED.find((v) => !taken.has(v)) ?? SUGGESTED[0]!;
-    const id = nextColorId(settings.colors);
-    setColors([...settings.colors, { id, label: `Color ${id.slice(1)}`, value }]);
-  };
-
-  // Sites
-  const siteRow = (site: string) => {
-    const on = h('button', { type: 'button', class: 'link' }, 'Turn back on');
-    on.onclick = () => setSiteEnabled(site, true);
-    return h('li', {}, h('span', {}, site), on);
-  };
-
-  // Shortcuts
-  const toggle = commands.find((c) => c.name === 'toggle')?.shortcut;
-  const shortcuts = h('button', { type: 'button' }, 'Change shortcuts');
-  // Extension pages can't link to the browser's own pages, but can open them.
-  shortcuts.onclick = () => browser.tabs.create({ url: 'chrome://extensions/shortcuts' });
-
+  const view = current();
+  const [title, content] = VIEWS[view];
+  const children = await content(render);
+  // Switched tabs while this one loaded.
+  if (view !== current()) return;
+  // Re-rendering replaces every element, so focus moves to the new copy of the focused one.
+  const focused = document.activeElement?.id;
   app.replaceChildren(
     h(
       'header',
       {},
       h('h1', {}, 'penciled'),
       h(
-        'p',
-        { class: 'hint' },
-        'Settings apply to every site, and follow you to your other computers.',
-      ),
-    ),
-    section('Toolbar theme', theme),
-    section(
-      'Toolbar',
-      h('label', { class: 'check' }, openOnSelect, 'Show the toolbar when I select text'),
-      h(
-        'p',
-        { class: 'hint' },
-        `When this is off, select text and press ${key('A')} to highlight it. Clicking a highlight always opens it.`,
-      ),
-    ),
-    section(
-      'Colors',
-      h('p', { class: 'hint' }, 'Changing a color changes the highlights that use it.'),
-      h('ul', { class: 'colors' }, ...visible.map(colorRow)),
-      add,
-      retired.length > 0 &&
-        h(
-          'div',
-          { class: 'retired' },
-          h('h3', {}, 'Removed colors'),
-          h(
-            'p',
-            { class: 'hint' },
-            'These aren’t offered any more, but highlights already using them keep their color.',
-          ),
-          h('ul', { class: 'colors' }, ...retired.map(retiredRow)),
+        'nav',
+        { 'aria-label': 'Sections' },
+        ...(Object.keys(VIEWS) as View[]).map((v) =>
+          h('a', { href: `#${v}`, 'aria-current': v === view && 'page' }, VIEWS[v][0]),
         ),
-    ),
-    section(
-      'Sites where penciled is off',
-      sites.length
-        ? h('ul', { class: 'sites' }, ...sites.map(siteRow))
-        : h(
-            'p',
-            { class: 'hint' },
-            'penciled runs on every site. Turn it off for a site from the toolbar button.',
-          ),
-    ),
-    section(
-      'Keyboard shortcuts',
-      h(
-        'dl',
-        {},
-        h('dt', {}, 'Hide or show highlights on a tab'),
-        h('dd', {}, toggle || 'Not set'),
-        h('dt', {}, 'Open the toolbar for the selected text'),
-        h('dd', {}, key('A')),
-        h('dt', {}, 'Go to the next or previous highlight'),
-        h('dd', {}, `${key(']')} and ${key('[')}`),
       ),
-      shortcuts,
     ),
+    ...children,
   );
+  document.title = `${title} – penciled`;
+  const again = focused && document.getElementById(focused);
+  if (again instanceof HTMLInputElement) {
+    again.focus();
+    again.selectionStart = again.value.length;
+  }
 }
 
 render();
+window.addEventListener('hashchange', render);
 onSettings(render);
 onDisabledSites(render);
-// Highlights added or removed in open tabs change how many use each color.
+// Highlights added, changed or removed in open tabs.
 browser.storage.local.onChanged.addListener((changes) => {
   if (Object.keys(changes).some((key) => key.startsWith('page:'))) render();
 });

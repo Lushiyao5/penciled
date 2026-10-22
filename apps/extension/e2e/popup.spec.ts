@@ -77,7 +77,7 @@ test('turns penciled off for a site, and back on from the settings', async ({
   expect(Object.keys(await stored(background))).toContain(`page:${ARTICLE}`);
 
   const settings = await context.newPage();
-  await settings.goto(`${extension}/options.html`);
+  await settings.goto(`${extension}/options.html#settings`);
   await settings.getByRole('button', { name: 'Turn back on' }).click();
   await expect(settings.getByText('penciled runs on every site')).toBeVisible();
   await expect.poll(() => painted(page)).toMatchObject({ 'penciled-c2': ['lazy dog'] });
