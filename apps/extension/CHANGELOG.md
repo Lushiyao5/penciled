@@ -1,6 +1,6 @@
 # penciled for the browser
 
-## Unreleased
+## 0.3.0
 
 - A sidebar keeps your highlights beside the page as you read. **This page** follows the tab you're on; **All pages** lists and searches highlights from every site. Open it from the new button in penciled's menu, or press Alt+Shift+N to open or close it.
 - A new setting makes penciled's toolbar button open the sidebar instead of the menu.
