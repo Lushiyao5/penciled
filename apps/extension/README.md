@@ -7,19 +7,36 @@ A browser extension for highlighting text and taking notes on any web page, buil
 ```sh
 pnpm ext:dev     # builds penciled, then opens Chromium with the extension, reloading on changes
 pnpm ext:build   # production build in apps/extension/.output/chrome-mv3
+pnpm --filter extension dev:firefox     # the same as ext:dev, in Firefox (build penciled first)
+pnpm --filter extension build:firefox   # production build in apps/extension/.output/firefox-mv3
+pnpm --filter extension lint:firefox    # builds for Firefox and runs Mozilla's add-on linter
 pnpm --filter extension test       # unit tests (Node, with WXT's fake browser APIs)
 pnpm --filter extension test:e2e   # builds, then runs Playwright against the unpacked extension
 ```
 
-To try a build by hand, open `chrome://extensions`, turn on developer mode and load `apps/extension/.output/chrome-mv3` with "Load unpacked".
+To try a build by hand, open `chrome://extensions`, turn on developer mode and load `apps/extension/.output/chrome-mv3` with "Load unpacked". In Firefox, Zen and other Firefox-based browsers, open `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and pick `apps/extension/.output/firefox-mv3/manifest.json`. It stays until the browser restarts.
+
+Firefox needs version 140 or later, the first with the CSS Custom Highlight API. The end-to-end tests run in Chromium only, because Playwright can't load extensions in Firefox, so check Firefox changes by hand.
 
 ## Releasing
 
 The extension is versioned separately from the library, and changesets ignores it.
 
 1. Bump `version` in `package.json` and add a section for it to [CHANGELOG.md](./CHANGELOG.md).
-2. After merging, tag the commit `extension-v<version>` and push the tag. The [Extension release](../../.github/workflows/extension-release.yml) workflow builds `penciled-<version>-chrome.zip` and `penciled-<version>-edge.zip` and attaches them to a GitHub release.
-3. Upload the zips to the stores by hand. [store/listing.md](./store/listing.md) has the listing text, and `store/screenshots/` the screenshots (`pnpm --filter extension screenshots` retakes them).
+2. After merging, tag the commit `extension-v<version>` and push the tag. The [Extension release](../../.github/workflows/extension-release.yml) workflow builds `penciled-<version>-chrome.zip`, `-edge.zip`, `-firefox.zip` and `-sources.zip` and attaches them to a GitHub release.
+3. Upload the zips to the stores by hand. Firefox Add-ons also asks for `-sources.zip`, since the extension is bundled; its reviewers build from it with the steps below. [store/listing.md](./store/listing.md) has the listing text, and `store/screenshots/` the screenshots (`pnpm --filter extension screenshots` retakes them).
+
+## Building from source
+
+These steps rebuild the Firefox package from `penciled-<version>-sources.zip`, which holds this extension, the penciled package it's built on and the workspace files. They need Node 24 and pnpm 10.19.0 (`corepack enable` picks it up from `package.json`).
+
+```sh
+pnpm install --frozen-lockfile
+pnpm --filter penciled build
+pnpm --filter extension build:firefox
+```
+
+The extension is then in `apps/extension/.output/firefox-mv3`.
 
 ## How it works
 

@@ -1,14 +1,14 @@
 # Store listings
 
-What to fill in on the [Chrome Web Store](https://chrome.google.com/webstore/devconsole) and [Edge Add-ons](https://partner.microsoft.com/dashboard/microsoftedge/) dashboards. Upload `penciled-<version>-chrome.zip` and `penciled-<version>-edge.zip` from the [extension release](https://github.com/marcellosso/penciled/releases?q=extension&expanded=true).
+What to fill in on the [Chrome Web Store](https://chrome.google.com/webstore/devconsole), [Edge Add-ons](https://partner.microsoft.com/dashboard/microsoftedge/) and [Firefox Add-ons](https://addons.mozilla.org/developers/) dashboards. Upload `penciled-<version>-chrome.zip`, `penciled-<version>-edge.zip` and `penciled-<version>-firefox.zip` from the [extension release](https://github.com/marcellosso/penciled/releases?q=extension&expanded=true).
 
 Screenshots are in `screenshots/` (1280×800), and the Chrome Web Store's promo tiles in `promo/`: `small-tile.png` (440×280) and `marquee.png` (1400×560). Regenerate them all with `pnpm --filter extension screenshots`. No promo video for now. The store icon is `public/icon/128.png`; regenerate the icons with `pnpm --filter extension icons`.
 
 ## Listing
 
-- **Name:** penciled – Highlighter & Notes for any web page (from the manifest)
+- **Name:** penciled – Highlighter & Notes for any web page (from the manifest; "for web pages" on Firefox, which caps names at 45 characters)
 - **Summary:** Highlight text and take notes on any website. Your highlights come back when you return. Nothing leaves your browser. (from the manifest, under 132 characters)
-- **Category:** Productivity → Tools (Chrome) · Productivity (Edge)
+- **Category:** Productivity → Tools (Chrome) · Productivity (Edge) · Other (Firefox)
 - **Language:** English
 - **Homepage:** https://penciled.org/extension/
 - **Support:** https://github.com/marcellosso/penciled/issues
@@ -46,3 +46,11 @@ Built on penciled, the open-source text annotation library: https://penciled.org
   - Host permission (`<all_urls>`, through the content script): the reader can highlight on any website, so the content script runs on every page to show their highlights and the toolbar.
 - **Remote code:** No, it doesn't use remote code.
 - **Data usage:** none of the listed types of data is collected. Website content (the highlighted text, with a little of the text around it, and the page's address and title) is stored locally only and is never transmitted, so it isn't "collected" in the store's sense. Certify all three statements: not sold, not used for unrelated purposes, not used for credit.
+
+## Firefox Add-ons
+
+- **Listing:** "On this site", so it's signed and listed on addons.mozilla.org. Zen, Floorp, LibreWolf and other Firefox-based browsers install from there.
+- **Source code:** yes, the package is bundled and minified. Upload `penciled-<version>-sources.zip` from the same release.
+- **Notes to reviewer:** Build steps are in apps/extension/README.md inside the sources zip, under "Building from source". The build is made with WXT and is reproducible: the output matches the uploaded package.
+- **Data collection:** none, declared in the manifest (`data_collection_permissions`).
+- **License:** MIT.

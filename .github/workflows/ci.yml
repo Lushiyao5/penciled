@@ -34,6 +34,7 @@ jobs:
           path: packages/penciled/test-results/
       - run: pnpm docs:build
       - run: pnpm --filter extension test
+      - run: pnpm --filter extension lint:firefox
       - run: pnpm --filter extension test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
