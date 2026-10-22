@@ -8,6 +8,8 @@ const root = process.env.ROOT ?? join(import.meta.dirname, 'fixtures');
 const types: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.woff2': 'font/woff2',
 };
 
 createServer(async (req, res) => {

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>penciled</title>
+    <link rel="stylesheet" href="promo.css" />
+    <style>
+      body {
+        display: grid;
+        grid-template-columns: 600px 1fr;
+        align-items: center;
+        gap: 72px;
+        box-sizing: border-box;
+        width: 1400px;
+        height: 560px;
+        padding: 0 88px;
+      }
+      .wordmark {
+        --stroke: 2px;
+        font-size: 34px;
+      }
+      h1 {
+        margin: 56px 0 20px;
+        font: 400 60px / 1.08 var(--serif);
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        margin: 0;
+        color: var(--muted);
+        font-size: 23px;
+        line-height: 1.4;
+      }
+      .page {
+        padding: 34px 38px;
+        border: 1px solid #e7e4de;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 1px 2px #0000000a, 0 24px 48px -24px #0000002e;
+      }
+      .page p {
+        margin: 0;
+        font: 400 23px / 1.65 var(--serif);
+      }
+      .page p + p {
+        margin-top: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-penciled>
+      <span class="wordmark">penciled<svg viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8.5c14-3.2 30-4.6 47-4.2 17 .4 30 2.3 44 2.6 9 .2 17-.5 25-2.1"/></svg></span>
+      <h1>Read the web with a <mark>pencil in hand.</mark></h1>
+      <p class="lede">Highlight and take notes on any website. Free, open source, and nothing leaves your browser.</p>
+    </div>
+    <article class="page">
+      <p>A highlight is a small act of attention. It says: this, here, is the point. A note goes one step further and records why.</p>
+      <p>The best tools for this get out of the way. They appear when you select a sentence, and disappear when you are done.</p>
+    </article>
+  </body>
+</html>
