@@ -215,7 +215,8 @@ code {
 }
 .links {
   display: flex;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
   margin: 1.25rem 0 0;
   font-size: 0.875rem;
 }
@@ -354,6 +355,21 @@ code {
   margin: 1rem 0 0;
   color: var(--pd-muted);
   font-size: 0.875rem;
+}
+
+.support {
+  margin: 0.75rem 0 0;
+  color: var(--pd-muted);
+  font-size: 0.875rem;
+}
+
+.faq h3 {
+  margin: 1.75rem 0 0;
+  color: var(--pd-fg);
+  font: 500 1.0625rem / 1.4 var(--pd-sans);
+}
+.faq h3 + p {
+  margin: 0.35rem 0 0;
 }
 
 .dom {
