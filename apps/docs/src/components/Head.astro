@@ -16,7 +16,16 @@ if (data.metaTitle) {
   }
 }
 
-const url = Astro.site && new URL(Astro.url.pathname, Astro.site).href;
+// The 404 page is served at every missing URL, so it must not be indexed or claim a canonical URL.
+const notFound = route.id === '404';
+if (notFound) {
+  route.head = route.head.filter(
+    (tag) => tag.attrs?.rel !== 'canonical' && tag.attrs?.property !== 'og:url',
+  );
+  route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'noindex' } });
+}
+
+const url = !notFound && Astro.site && new URL(Astro.url.pathname, Astro.site).href;
 const home = Astro.site && new URL('/', Astro.site).href;
 const structuredData = url &&
   home && [
