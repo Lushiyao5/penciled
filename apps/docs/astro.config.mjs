@@ -119,6 +119,7 @@ export default defineConfig({
           items: [
             { label: 'Getting started', slug: 'getting-started' },
             { label: 'Playground', slug: 'playground' },
+            { label: 'Compare with other libraries', slug: 'compare' },
           ],
         },
         {

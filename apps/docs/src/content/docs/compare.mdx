@@ -1,0 +1,75 @@
+---
+title: Compare penciled with other highlight libraries
+metaTitle: 'penciled vs mark.js, rangy, web-highlighter, Recogito and Annotator.js'
+lastUpdated: 2026-10-22
+description: Compare JavaScript libraries that highlight text and annotate web pages, by approach, DOM changes, persistence, bundle size, maintenance and browser support.
+---
+
+**penciled** (penciled.js) is a 15 kB open-source JavaScript library for persistent text highlights and notes. It paints highlights with the CSS Custom Highlight API instead of wrapping text in elements, and it comes with a toolbar, a note editor and saving to `localStorage` or your own backend. This page compares it with five other libraries that highlight or annotate text: [mark.js](https://markjs.io/), [rangy](https://github.com/timdown/rangy), [web-highlighter](https://github.com/alienzhou/web-highlighter), [@recogito/text-annotator](https://github.com/recogito/text-annotator-js) and [Annotator.js](https://github.com/openannotation/annotator). They solve different problems, and for some jobs one of them is the better choice.
+
+## How do they compare at a glance?
+
+Sizes, releases and downloads were measured on 22 October 2026. See [how these numbers were measured](#how-were-these-numbers-measured).
+
+<div class="compare-table">
+
+| Library | Approach | Mutates DOM? | Persistence | Size (min+gzip) | Last release | Weekly npm downloads | License | Old-browser support | Best for |
+|---|---|---|---|---|---|---|---|---|---|
+| **penciled** | Highlight and note UI plus engine, painted with the CSS Custom Highlight API | No | Built in: `localStorage` or your adapter | 15.3 kB (6.4 kB headless) + 2.6 kB CSS | 0.5.1, 2026-10-22 | 643 | MIT | No: `annotate()` only warns | Reader highlights and notes |
+| **mark.js** | Search-term highlighter | Yes, `<mark>` | None | 6.2 kB | 8.11.1, 2018-01-11 | 1,936,357 | MIT | Yes | Highlighting search terms |
+| **rangy** | Range and Selection toolkit with a Highlighter module | Yes, `<span>` | Serializes offsets; you store them | 22.7 kB¹ | 1.3.2, 2024-11-02 | 36,774 | MIT | Yes | Low-level selection work |
+| **web-highlighter** | Headless highlighting engine | Yes, `<span>` | Serializes DOM paths; you store them | 9.4 kB | 0.8.0, 2026-08-19 | 2,051 | MIT | Yes, IE 11+ | Custom highlighters for old browsers |
+| **@recogito/text-annotator** | Annotation framework on the W3C model | Adds an overlay layer; text isn't wrapped | None; save from its events | 22.4 kB + 0.4 kB CSS | 4.3.7, 2026-10-12 | 13,415 | BSD-3-Clause | Yes, by default² | Research and collaborative annotation |
+| **Annotator.js** | jQuery annotation app with plugins | Yes, `<span>` | HTTP storage for an Annotator Store | 54.3 kB³ | 2.0.0-alpha.3, 2015-07-03 | 98 | MIT or GPL | Yes | Existing Annotator setups |
+
+</div>
+
+penciled needs Chrome/Edge 105+, Safari 17.2+ or Firefox 140+, with no fallback on older browsers.
+
+1. rangy's core, ClassApplier, Highlighter and Serializer modules, which a highlighter needs.
+2. Recogito's default renderer doesn't need the Highlight API; an optional renderer uses it. No minimum browser is documented.
+3. Includes jQuery 1.11 and Annotator's own CSS. Measured differently, see below.
+
+## Why does it matter whether a library mutates the DOM?
+
+Wrapping highlighted text in `<mark>` or `<span>` elements works everywhere, but it changes the page underneath your code. Frameworks like React and Vue expect to own their markup, so a re-render can drop the highlights or fight with them, and highlights added before hydration can cause mismatches. Wrapping also splits text nodes and adds elements, which can break CSS selectors like `p > a` and scripts that walk the content.
+
+The CSS Custom Highlight API lets the browser paint a range of text without any new elements. penciled relies on it entirely, and there is [no fallback](/guides/browser-support/#unsupported-browsers) that wraps text. Recogito takes a middle path: its default renderer leaves your text alone but draws highlight boxes in a layer it adds to the container.
+
+## Where does each alternative win?
+
+- **mark.js** is the right tool for highlighting search terms. It handles keywords, regular expressions, diacritics and synonyms, it's smaller than penciled, it works in old browsers, and it has millions of weekly downloads behind it. penciled doesn't do search highlighting at all. mark.js hasn't had a release since 2018, but it's stable for what it does.
+- **rangy** is a general Range and Selection toolkit: saving and restoring selections, text ranges, serialization and class application. If you need those primitives, or old browsers, it's broader than penciled, which only exposes what annotation needs.
+- **web-highlighter** works back to IE 11 and is smaller than penciled. It's a headless engine with hooks to customize how highlights are serialized and restored, so you control everything, including the UI and storage you'll have to build.
+- **@recogito/text-annotator** is the most capable annotation framework here. It's built on the W3C Web Annotation model, supports multiple users, has React bindings and a sibling PDF annotator, and is used in research and digital humanities projects. If you need collaborative annotation or W3C data end to end, start there.
+- **Annotator.js** has a plugin system and a defined storage API, and the [Hypothesis](https://web.hypothes.is/) annotation tool was originally built on it. It hasn't had a release since 2015 and depends on jQuery 1.11, so it mostly matters if you already run it.
+
+penciled is also new: it's below 1.0, so its API may still change between minor versions, and it has far fewer users than mark.js or rangy.
+
+## Where does penciled win?
+
+- **It never touches your DOM.** Highlights are painted by the browser, so React, Vue, Svelte and server-rendered pages re-render without losing them, and your markup, selectors and event listeners keep working. [Try it on the home page](/#b-dom).
+- **It's a complete feature, not a toolkit.** `annotate('#article')` gives readers a floating toolbar, colors, a note editor, a hover preview, light and dark themes, keyboard shortcuts and screen-reader announcements. If you want your own UI, [`penciled/headless`](/reference/headless/) is the engine alone, at 6.4 kB.
+- **Saving is built in.** Annotations persist to `localStorage` with no setup, or to your API through a [storage adapter](/recipes/rest-storage/). They're plain JSON, and [`toW3C()`](/recipes/export-import/#w3c-web-annotations) exports W3C Web Annotations.
+- **It doesn't guess.** Each annotation stores its quote, the text around it and its position. When content changes, penciled finds it again, and when it can't be sure, it [sets the annotation aside](/guides/anchoring/) instead of highlighting the wrong words.
+- **It's small for what it includes.** 15.3 kB with the full UI and one dependency, `@floating-ui/dom`. Importing it is safe during server-side rendering, and it ships TypeScript types.
+
+## Which one should I use?
+
+- To highlight **search terms** on a page: mark.js.
+- To let **readers highlight and take notes** in modern browsers, without building the UI or storage yourself: penciled.
+- To build **your own highlighter** that must work in **old browsers**: web-highlighter, or rangy for lower-level control.
+- For **collaborative or research annotation** on the W3C model: @recogito/text-annotator.
+- For an **existing Annotator.js** deployment: keep it, or plan a migration; it isn't maintained.
+
+## How were these numbers measured?
+
+All figures were collected on 22 October 2026.
+
+- **Size** is the package's full entry point bundled with all its dependencies, minified and gzipped by [size-limit](https://github.com/ai/size-limit) 14 with `@size-limit/preset-small-lib`, the same setup penciled's own size check uses. For rangy it's the four modules a highlighter needs. Annotator.js can't be bundled by size-limit, because it imports CSS and images, so it was bundled with esbuild, minified and gzipped at level 9, with its CSS and sprite inlined. Bundlephobia was rate-limiting requests at the time, so its numbers weren't used.
+- **Last release** is the publish date of the `latest` dist-tag in the npm registry. For Annotator.js that's a 2.0 alpha; the last stable version, 1.2.2, is from 2012.
+- **Weekly downloads** are from the npm downloads API for 12–18 October 2026.
+- **License** is from each package's `package.json` or license file.
+- **Old-browser support** is from each project's documentation and source.
+
+Spotted something out of date or wrong? [Open an issue](https://github.com/marcellosso/penciled/issues) and it'll be fixed.
