@@ -190,11 +190,6 @@ export function Post({ post }) {
           penciled is a 15&nbsp;kB open-source JavaScript library for persistent highlights and
           notes on any web page. No backend, and it never touches your DOM.
         </p>
-        <p class="support">
-          Chrome/Edge 105+, Safari 17.2+, Firefox 140+. No fallback on older browsers: <code
-            >annotate()</code
-          > only warns. <a href="/guides/browser-support/">Browser support</a>
-        </p>
         <div class="actions">
           <div class="install">
             <code><span aria-hidden="true">$</span> npm install penciled</code>
@@ -210,10 +205,12 @@ export function Post({ post }) {
         </div>
         <p class="links">
           <a href={npm}>npm</a>
-          <a href={github}>GitHub</a>
-          <a href="/playground/">Playground</a>
           <a href="/compare/">Compare</a>
           <a href="/extension/">Browser extension</a>
+        </p>
+        <p class="support">
+          <a class="quiet" href="/guides/browser-support/">Chrome/Edge 105+, Safari 17.2+, Firefox 140+</a>.
+          Older browsers get a console warning, not a fallback.
         </p>
       </section>
 
