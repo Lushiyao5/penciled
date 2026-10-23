@@ -1,7 +1,7 @@
 ---
 title: Anchoring and limitations
 metaTitle: 'How text highlights are anchored, and their limitations'
-description: How penciled finds an annotation's text again, and what it can't do.
+description: How penciled anchors text highlights and annotations so they survive content changes, when it orphans them instead, and its limitations.
 ---
 
 An annotation is only useful if it comes back on the right words. Pages change between visits: a typo is fixed, a paragraph is added, a framework renders slightly different markup. **Anchoring** is how penciled finds the annotated text again, and its one rule is that it never guesses. If it can't be confident, it doesn't highlight anything.
