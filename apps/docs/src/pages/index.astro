@@ -9,10 +9,13 @@ import '../styles/custom.css';
 import '../styles/landing.css';
 import { Code } from '@astrojs/starlight/components';
 import Analytics from '@vercel/analytics/astro';
+import { faq } from '../faq.ts';
 import { scoped, skins } from '../skins.ts';
 
 const github = 'https://github.com/marcellosso/penciled';
 const npm = 'https://www.npmjs.com/package/penciled';
+const stackblitz =
+  'https://stackblitz.com/github/marcellosso/penciled/tree/main/examples/vanilla?file=main.js';
 
 const title = 'penciled.js: JavaScript highlights & notes library';
 const summary =
@@ -26,8 +29,8 @@ const structuredData = {
   '@graph': [
     {
       '@type': 'SoftwareApplication',
-      name: 'penciled.js',
-      alternateName: 'penciled',
+      name: 'penciled',
+      alternateName: ['penciled.js', 'penciled JS library'],
       description,
       ...(canonical && { url: canonical }),
       applicationCategory: 'DeveloperApplication',
@@ -49,6 +52,14 @@ const structuredData = {
       author,
       keywords:
         'text highlight, annotation, notes, CSS Custom Highlight API, JavaScript library, React',
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: faq.map(({ question, answer }) => ({
+        '@type': 'Question',
+        name: question,
+        acceptedAnswer: { '@type': 'Answer', text: answer },
+      })),
     },
   ],
 };
@@ -194,8 +205,12 @@ export function Post({ post }) {
         </div>
         <p class="links">
           <a href={npm}>npm</a>
-          <a href={github}>GitHub</a>
-          <a href="/playground/">Playground</a>
+          <a href="/compare/">Compare</a>
+          <a href="/extension/">Browser extension</a>
+        </p>
+        <p class="support">
+          <a class="quiet" href="/guides/browser-support/">Chrome/Edge 105+, Safari 17.2+, Firefox 140+</a>.
+          Older browsers get a console warning, not a fallback.
         </p>
       </section>
 
@@ -225,6 +240,9 @@ export function Post({ post }) {
         <h2 id="b-setup">Setup</h2>
         <p>Three lines. Highlights, notes and saving work immediately.</p>
         <Code code={setup} lang="ts" />
+        <p class="aside">
+          <a href={stackblitz}>Edit on StackBlitz</a>: the same three lines in a minimal Vite page.
+        </p>
       </section>
 
       <section class="block" aria-labelledby="b-colors">
@@ -326,10 +344,37 @@ export function Post({ post }) {
         </div>
       </section>
 
+      <section class="block" aria-labelledby="b-extension">
+        <h2 id="b-extension">For readers: the browser extension</h2>
+        <p>
+          Not building a site? penciled for the browser lets you highlight and take notes on any
+          website, in Chrome, Edge and other Chromium browsers 123+ and Firefox 140+. It's built on
+          this library, free and open source, and nothing leaves your browser.
+        </p>
+        <p><a href="/extension/">Get the browser extension <span aria-hidden="true">→</span></a></p>
+      </section>
+
+      <section class="block faq" aria-labelledby="b-faq">
+        <h2 id="b-faq">Questions</h2>
+        {
+          faq.map(({ question, answer }) => (
+            <>
+              <h3>{question}</h3>
+              <p>
+                {answer
+                  .split(/(https:\/\/\S+\/)/)
+                  .map((part) => (part.startsWith('https://') ? <a href={part}>{part}</a> : part))}
+              </p>
+            </>
+          ))
+        }
+      </section>
+
       <nav class="next" aria-label="Next steps">
         <a href="/getting-started/">Get started <span aria-hidden="true">→</span></a>
         <a href="/playground/">Playground</a>
         <a href="/reference/options/">API reference</a>
+        <a href="/compare/">Compare with other libraries</a>
       </nav>
     </main>
 

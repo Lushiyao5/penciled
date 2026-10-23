@@ -232,3 +232,13 @@ starlight-toc a[aria-current="true"] {
   -webkit-mask-size: contain;
   opacity: 0.6;
 }
+
+/* The comparison table has ten columns: let it scroll sideways rather than wrap word by word. */
+.compare-table th,
+.compare-table td {
+  min-width: 8.5rem;
+}
+.compare-table th:first-child,
+.compare-table td:first-child {
+  min-width: 10rem;
+}
